@@ -22,6 +22,8 @@ Adgangskoder skal være mindst 8 tegn. Brugere kan logge ind fra flere enheder m
 
 Pointtavlen viser kaldenavne og antal delte gerninger; selve beskrivelserne er kun synlige for den bruger, der skrev dem. Point gives automatisk for hver indsendelse, så tavlen bygger på tillid og er ikke en verificeret konkurrence.
 
+Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives. Slå e-mailbekræftelse fra, da appens syntetiske loginadresser ikke kan modtage e-mail.
+
 ## Kør lokalt
 
 Fra projektmappen kan du starte en simpel webserver:

@@ -1,6 +1,8 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   nickname text not null unique,
+  constraint profiles_nickname_format_check
+    check (nickname ~ '^[A-Za-z0-9_]{3,20}$'),
   created_at timestamptz not null default now()
 );
 
@@ -14,11 +16,29 @@ create table if not exists public.activities (
 create index if not exists activities_user_created_at_idx
   on public.activities (user_id, created_at desc);
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_nickname_format_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_nickname_format_check
+      check (nickname ~ '^[A-Za-z0-9_]{3,20}$');
+  end if;
+end;
+$$;
+
 create unique index if not exists profiles_nickname_lower_unique_idx
   on public.profiles (lower(nickname));
 
 alter table public.profiles enable row level security;
 alter table public.activities enable row level security;
+
+revoke all on public.profiles from public, anon, authenticated;
+revoke all on public.activities from public, anon, authenticated;
 
 drop policy if exists "Signed-in users can view profiles" on public.profiles;
 create policy "Signed-in users can view profiles"
@@ -51,6 +71,10 @@ security definer
 set search_path = ''
 as $$
 begin
+  if coalesce(new.raw_user_meta_data ->> 'nickname', '') !~ '^[A-Za-z0-9_]{3,20}$' then
+    raise exception 'Nickname must be 3–20 letters, numbers, or underscores.';
+  end if;
+
   insert into public.profiles (id, nickname)
   values (new.id, new.raw_user_meta_data ->> 'nickname');
   return new;
@@ -84,15 +108,14 @@ grant execute on function public.get_leaderboard() to authenticated;
 create or replace function public.get_login_email(requested_nickname text)
 returns text
 language sql
-stable
-security definer
+immutable
 set search_path = ''
 as $$
-  select u.email
-  from public.profiles as p
-  join auth.users as u on u.id = p.id
-  where lower(p.nickname) = lower(trim(requested_nickname))
-  limit 1;
+  select case
+    when trim(coalesce(requested_nickname, '')) ~ '^[A-Za-z0-9_]{3,20}$'
+      then lower(trim(requested_nickname)) || '@users.hverdagens.invalid'
+    else null
+  end;
 $$;
 
 revoke all on function public.get_login_email(text) from public;
@@ -130,7 +153,8 @@ begin
   where id = current_user_id;
 
   update auth.users
-  set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+  set email = lower(normalized_nickname) || '@users.hverdagens.invalid',
+      raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
         || jsonb_build_object('nickname', normalized_nickname),
       updated_at = now()
   where id = current_user_id;
