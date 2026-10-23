@@ -694,7 +694,6 @@ supabase.auth.onAuthStateChange((event, session) => {
     showSignedOut();
     return;
   }
-  currentSession = session;
   if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
     const flow = ++authFlow;
     setTimeout(() => { routeSignedInSession(session, flow); }, 0);
