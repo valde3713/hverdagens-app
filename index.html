@@ -55,32 +55,6 @@
       </div>
     </main>
 
-    <main id="mfa-screen" class="auth-screen" hidden>
-      <section class="auth-card" aria-labelledby="mfa-title">
-        <a class="brand brand-centered" href="./">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
-          </span>
-          <span>hverdagens<span class="brand-light">app</span></span>
-        </a>
-        <p class="eyebrow">EKSTRA BESKYTTELSE</p>
-        <h1 id="mfa-title">Tjek din e-mail</h1>
-        <p id="mfa-message" class="auth-intro">Vi har sendt en engangskode til din e-mail.</p>
-        <form id="mfa-login-form">
-          <label for="mfa-login-code">Engangskode</label>
-          <input id="mfa-login-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="6 cifre" required>
-          <button class="button button-primary button-wide" type="submit">Bekræft kode <span aria-hidden="true">→</span></button>
-        </form>
-        <button id="mfa-resend" class="text-button mfa-resend" type="button">Send en ny kode</button>
-        <button id="mfa-cancel" class="text-button mfa-cancel" type="button">Log ud</button>
-      </section>
-      <div class="auth-art" aria-hidden="true">
-        <span class="sun"></span><span class="hill hill-back"></span><span class="hill hill-front"></span>
-        <span class="art-leaf leaf-one">✳</span><span class="art-leaf leaf-two">✳</span>
-        <span class="art-caption">Ekstra sikkerhed<br>til din grønne hverdag.</span>
-      </div>
-    </main>
-
     <div id="app-shell" class="app-shell" hidden>
       <aside class="sidebar">
         <a class="brand" href="#home" aria-label="Hverdagens app, forside">
@@ -232,21 +206,6 @@
                   </select>
                 </div>
               </div>
-              <section class="settings-form mfa-settings">
-                <h3>Tofaktorbekræftelse via e-mail</h3>
-                <p id="mfa-settings-status" class="setting-hint">Slå tofaktor til for at beskytte din konto med en ekstra kode ved login.</p>
-                <p class="setting-hint">Du skal kunne åbne denne e-mail ved hvert login. Gem adgangen til din e-mail sikkert.</p>
-                <form id="mfa-enroll-form">
-                  <label for="mfa-email">Din e-mailadresse</label>
-                  <input id="mfa-email" type="email" autocomplete="email" maxlength="254" placeholder="navn@eksempel.dk" required>
-                  <button id="mfa-send-code" class="button button-secondary" type="submit">Send bekræftelseskode</button>
-                </form>
-                <form id="mfa-enroll-verify-form" hidden>
-                  <label for="mfa-enroll-code">Kode fra e-mail</label>
-                  <input id="mfa-enroll-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="6 cifre" required>
-                  <button class="button button-secondary" type="submit">Bekræft e-mail og slå til</button>
-                </form>
-              </section>
               <form id="password-form" class="settings-form">
                 <h3>Skift personlig kode</h3>
                 <label for="new-passcode">Ny kode</label>

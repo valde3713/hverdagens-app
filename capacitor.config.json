@@ -1,0 +1,8 @@
+{
+  "appId": "dk.valde3713.hverdagensapp",
+  "appName": "Hverdagens app",
+  "webDir": "native/www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

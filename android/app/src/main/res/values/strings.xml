@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hverdagens app</string>
+    <string name="title_activity_main">Hverdagens app</string>
+    <string name="package_name">dk.valde3713.hverdagensapp</string>
+    <string name="custom_url_scheme">dk.valde3713.hverdagensapp</string>
+</resources>

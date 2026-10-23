@@ -30,19 +30,18 @@
         <li>Dit kaldenavn, en intern kontoidentifikator og kontoens oprettelsesdato.</li>
         <li>Teksten i dine gode gerninger og tidspunktet, de blev delt. Beskrivelserne vises kun på din egen konto.</li>
         <li>Kaldenavn og antal gerninger vises på pointtavlen for andre indloggede brugere.</li>
-        <li>Hvis du frivilligt slår e-mail-tofaktor til: din e-mailadresse, en kortlivet engangskode og oplysninger om bekræftede login-sessioner.</li>
         <li>Din personlige kode håndteres af Supabase Auth og vises eller gemmes ikke som læsbar tekst i appen.</li>
       </ul>
 
       <h2>Hvorfor og hvor behandles oplysningerne?</h2>
-      <p>Oplysningerne bruges til at oprette og sikre konti, gemme gerninger og vise pointtavlen. Appens database og autentificering er hos Supabase i projektets valgte EU-region. MFA-serverfunktionen er konfigureret til at køre i Frankfurt (eu-central-1). GitHub Pages leverer appens offentlige filer. Hvis e-mail-tofaktor aktiveres, sendes din e-mail og engangskode via Resend; ejeren skal kontrollere Resends databehandleraftale og region før brug.</p>
-      <p>GitHub, Supabase og Resend kan behandle tekniske forbindelsesoplysninger, fx IP-adresse, i forbindelse med drift og sikkerhed. Supabase-klientbiblioteket ligger lokalt sammen med appen; browseren sender ikke loginoplysninger til en ekstern kode-CDN. Appen bruger ikke annoncerings- eller analyseværktøjer. Backups, driftslogs og underleverandører kan have andre opbevarings- eller overførselsvilkår. Serveringsregion alene garanterer ikke overholdelse af GDPR; leverandørvilkår og overførsler skal også kontrolleres.</p>
+      <p>Oplysningerne bruges til at oprette og sikre konti, gemme gerninger og vise pointtavlen. Appens database og autentificering er hos Supabase i projektets valgte EU-region. GitHub Pages leverer appens offentlige filer. Appen kræver ikke en e-mailadresse til login.</p>
+      <p>GitHub og Supabase kan behandle tekniske forbindelsesoplysninger, fx IP-adresse, i forbindelse med drift og sikkerhed. Supabase-klientbiblioteket ligger lokalt sammen med appen; browseren sender ikke loginoplysninger til en ekstern kode-CDN. Appen bruger ikke annoncerings- eller analyseværktøjer. Backups, driftslogs og underleverandører kan have andre opbevarings- eller overførselsvilkår. Serveringsregion alene garanterer ikke overholdelse af GDPR; leverandørvilkår og overførsler skal også kontrolleres.</p>
 
       <h2>Hvor længe gemmes oplysningerne?</h2>
-      <p>Profil og gerninger gemmes, indtil du sletter dem eller sletter kontoen. E-mail-tofaktor er valgfrit og kan knyttes til kontoen, indtil kontoen slettes. Engangskoder udløber efter 10 minutter; kodeposter ældre end 24 timer og udløbne sessionsposter ryddes, når MFA-funktionen bruges. Leverandører kan have særskilte, begrænsede drifts- og sikkerhedslogs efter deres egne vilkår.</p>
+      <p>Profil og gerninger gemmes, indtil du sletter dem eller sletter kontoen. Leverandører kan have særskilte, begrænsede drifts- og sikkerhedslogs efter deres egne vilkår.</p>
 
       <h2>Dine valg og rettigheder</h2>
-      <p>Under <strong>Min profil → Indstillinger → Dine data</strong> kan du hente en kopi af appens kontodata eller slette din konto. Sletning fjerner profilen, gerningerne og MFA-indstillingerne fra appens database. Din lokale indstilling for tema og sprog gemmes kun i browseren.</p>
+      <p>Under <strong>Min profil → Indstillinger → Dine data</strong> kan du hente en kopi af appens kontodata eller slette din konto og gerninger. Din lokale indstilling for tema og sprog gemmes kun i browseren.</p>
       <p>Du kan efter GDPR have ret til indsigt, berigtigelse, sletning, begrænsning, dataportabilitet og at klage til Datatilsynet. Kontaktoplysninger på den dataansvarlige skal offentliggøres her, før appen bruges bredt. Denne side er praktisk information, ikke juridisk rådgivning eller en garanti for, at alle juridiske krav er opfyldt.</p>
 
       <a class="button button-primary privacy-back" href="./">Tilbage til Hverdagens app <span aria-hidden="true">→</span></a>

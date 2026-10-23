@@ -1,7 +1,6 @@
 const config = window.APP_CONFIG;
 const { createClient, FunctionRegion } = window.supabase;
 const authScreen = document.querySelector("#auth-screen");
-const mfaScreen = document.querySelector("#mfa-screen");
 const appShell = document.querySelector("#app-shell");
 const authForm = document.querySelector("#auth-form");
 const authSubmit = document.querySelector("#auth-submit");
@@ -20,12 +19,8 @@ const leaderboardList = document.querySelector("#leaderboard-list");
 const recentList = document.querySelector("#recent-list");
 const themeSetting = document.querySelector("#theme-setting");
 const languageSetting = document.querySelector("#language-setting");
-const mfaLoginForm = document.querySelector("#mfa-login-form");
-const mfaEnrollForm = document.querySelector("#mfa-enroll-form");
-const mfaEnrollVerifyForm = document.querySelector("#mfa-enroll-verify-form");
 let supabase;
 let currentUser;
-let currentSession;
 let authFlow = 0;
 let isSignup = false;
 let noticeTimeout;
@@ -79,20 +74,6 @@ const translations = {
     "#settings-page .page-heading .page-subtitle": "Vælg, hvordan Hverdagens app passer bedst til dig.",
     ".settings-panel .panel-heading .eyebrow": "GØR APPEN TIL DIN",
     ".settings-panel .panel-heading h2": "Indstillinger",
-    ".mfa-settings h3": "Tofaktorbekræftelse via e-mail",
-    "#mfa-settings-status": "Slå tofaktor til for at beskytte din konto med en ekstra kode ved login.",
-    ".mfa-settings .setting-hint:not(#mfa-settings-status)": "Du skal kunne åbne denne e-mail ved hvert login. Gem adgangen til din e-mail sikkert.",
-    "label[for='mfa-email']": "Din e-mailadresse",
-    "#mfa-email": "navn@eksempel.dk",
-    "#mfa-send-code": "Send bekræftelseskode",
-    "label[for='mfa-enroll-code']": "Kode fra e-mail",
-    "#mfa-enroll-code": "6 cifre",
-    "#mfa-enroll-verify-form button": "Bekræft e-mail og slå til",
-    "label[for='mfa-login-code']": "Engangskode",
-    "#mfa-login-code": "6 cifre",
-    "#mfa-login-form button": "Bekræft kode",
-    "#mfa-resend": "Send en ny kode",
-    "#mfa-cancel": "Log ud",
     ".data-rights-panel > .eyebrow": "DINE DATA",
     ".data-rights-panel h2": "Privatliv og konto",
     ".data-rights-panel .setting-hint": "Du kan hente en kopi af dine profildata og gerninger eller slette din konto og dens data.",
@@ -168,20 +149,6 @@ const translations = {
     "#settings-page .page-heading .page-subtitle": "Choose how Hverdagens app works best for you.",
     ".settings-panel .panel-heading .eyebrow": "MAKE THE APP YOURS",
     ".settings-panel .panel-heading h2": "Settings",
-    ".mfa-settings h3": "Two-factor verification by email",
-    "#mfa-settings-status": "Protect your account with an extra code at sign-in.",
-    ".mfa-settings .setting-hint:not(#mfa-settings-status)": "You need access to this email account each time you log in. Keep it secure.",
-    "label[for='mfa-email']": "Your email address",
-    "#mfa-email": "name@example.com",
-    "#mfa-send-code": "Send verification code",
-    "label[for='mfa-enroll-code']": "Code from email",
-    "#mfa-enroll-code": "6 digits",
-    "#mfa-enroll-verify-form button": "Verify email and enable",
-    "label[for='mfa-login-code']": "One-time code",
-    "#mfa-login-code": "6 digits",
-    "#mfa-login-form button": "Verify code",
-    "#mfa-resend": "Send a new code",
-    "#mfa-cancel": "Log out",
     ".data-rights-panel > .eyebrow": "YOUR DATA",
     ".data-rights-panel h2": "Privacy and account",
     ".data-rights-panel .setting-hint": "Download a copy of your profile and deeds, or delete your account and its data.",
@@ -238,15 +205,13 @@ function setAuthMode(signup) {
 
 function showSignedOut() {
   currentUser = undefined;
-  currentSession = undefined;
   appShell.hidden = true;
-  mfaScreen.hidden = true;
   authScreen.hidden = false;
 }
 
-async function invokeMfa(action, values = {}) {
+async function invokePrivacyFunction(action) {
   const { data, error } = await supabase.functions.invoke("email-mfa", {
-    body: { action, ...values },
+    body: { action },
     region: FunctionRegion.EuCentral1
   });
   if (error) {
@@ -258,12 +223,12 @@ async function invokeMfa(action, values = {}) {
         responseBody = undefined;
       }
       if (error.context.status === 404 || responseBody?.code === "NOT_FOUND") {
-        throw new Error("MFA_FUNCTION_NOT_DEPLOYED");
+        throw new Error("ACCOUNT_FUNCTION_NOT_DEPLOYED");
       }
       if (typeof responseBody?.error === "string") throw new Error(responseBody.error);
     }
     if (error.name === "FunctionsFetchError") {
-      throw new Error("MFA_FUNCTION_UNAVAILABLE");
+      throw new Error("ACCOUNT_FUNCTION_UNAVAILABLE");
     }
     throw error;
   }
@@ -271,39 +236,13 @@ async function invokeMfa(action, values = {}) {
   return data;
 }
 
-async function routeSignedInSession(session, flow) {
-  currentSession = session;
-  authScreen.hidden = true;
-  appShell.hidden = true;
-  mfaScreen.hidden = true;
-  let status;
-  try {
-    status = await invokeMfa("status");
-  } catch (error) {
-    if (flow !== authFlow) return;
-    showSignedIn(session.user);
-    if (!["MFA_FUNCTION_NOT_DEPLOYED", "MFA_FUNCTION_UNAVAILABLE"].includes(error.message)) displayError(error);
-    return;
-  }
+function routeSignedInSession(session, flow) {
   if (flow !== authFlow) return;
-  if (status.enabled && !status.verified) {
-    mfaScreen.hidden = false;
-    document.querySelector("#mfa-message").textContent = languageSetting.value === "en"
-      ? `Enter the code we sent to ${status.emailHint}.`
-      : `Indtast koden, vi har sendt til ${status.emailHint}.`;
-    try {
-      await invokeMfa("start-login");
-    } catch (error) {
-      if (flow === authFlow) displayError(error);
-    }
-    return;
-  }
   showSignedIn(session.user);
 }
 
 function showSignedIn(user) {
   currentUser = user;
-  mfaScreen.hidden = true;
   const nickname = user.user_metadata?.nickname;
   if (!nickname) {
     showNotice("Profilen mangler et kaldenavn. Log ud og opret profilen igen.", true);
@@ -465,7 +404,6 @@ function navigate(page) {
     else element.removeAttribute("aria-current");
   });
   if (page === "leaderboard" && currentUser) loadDashboard();
-  if (page === "settings" && currentUser) loadMfaSettings();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -555,129 +493,13 @@ async function signOut() {
 
 document.querySelector("#signout-button").addEventListener("click", signOut);
 document.querySelector("#profile-signout").addEventListener("click", signOut);
-document.querySelector("#mfa-cancel").addEventListener("click", signOut);
 document.querySelector("#back-to-profile").addEventListener("click", () => navigate("profile"));
-
-async function loadMfaSettings() {
-  try {
-    const status = await invokeMfa("status");
-    const statusText = document.querySelector("#mfa-settings-status");
-    if (status.enabled) {
-      statusText.textContent = languageSetting.value === "en"
-        ? `Email two-factor is enabled for ${status.emailHint}.`
-        : `Tofaktor via e-mail er slået til for ${status.emailHint}.`;
-      mfaEnrollForm.hidden = true;
-      mfaEnrollVerifyForm.hidden = true;
-      return;
-    }
-    statusText.textContent = languageSetting.value === "en"
-      ? "Add a real email address. A six-digit code will be required when you log in."
-      : "Tilføj en rigtig e-mailadresse. Du skal bruge en sekscifret kode, når du logger ind.";
-    mfaEnrollForm.hidden = false;
-    mfaEnrollVerifyForm.hidden = true;
-    document.querySelector("#mfa-email").disabled = false;
-  } catch (error) {
-    if (["MFA_FUNCTION_NOT_DEPLOYED", "MFA_FUNCTION_UNAVAILABLE"].includes(error.message)) {
-      document.querySelector("#mfa-settings-status").textContent = languageSetting.value === "en"
-        ? "The email verification service is not available yet. Theme, language, and passcode settings are available."
-        : "E-mailbekræftelse er ikke tilgængelig endnu. Tema, sprog og kodeskift virker stadig.";
-      mfaEnrollForm.hidden = true;
-      mfaEnrollVerifyForm.hidden = true;
-    } else {
-      displayError(error);
-    }
-  }
-}
-
-mfaEnrollForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = document.querySelector("#mfa-send-code");
-  button.disabled = true;
-  try {
-    await invokeMfa("start-enrollment", {
-      email: document.querySelector("#mfa-email").value.trim()
-    });
-    document.querySelector("#mfa-email").disabled = true;
-    mfaEnrollVerifyForm.hidden = false;
-    document.querySelector("#mfa-settings-status").textContent = languageSetting.value === "en"
-      ? "Check your inbox and enter the six-digit code."
-      : "Tjek din indbakke, og indtast den sekscifrede kode.";
-    showNotice(languageSetting.value === "en" ? "Verification code sent." : "Bekræftelseskode sendt.");
-  } catch (error) {
-    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
-      showNotice(languageSetting.value === "en"
-        ? "Email verification is not available yet because the secure server function is not deployed."
-        : "E-mailbekræftelse er ikke tilgængelig endnu, fordi den sikre serverfunktion ikke er installeret.", true);
-    } else {
-      displayError(error);
-    }
-  } finally {
-    button.disabled = false;
-  }
-});
-
-mfaEnrollVerifyForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = event.currentTarget.querySelector('button[type="submit"]');
-  button.disabled = true;
-  try {
-    await invokeMfa("verify-enrollment", {
-      code: document.querySelector("#mfa-enroll-code").value.trim()
-    });
-    event.currentTarget.reset();
-    showNotice(languageSetting.value === "en"
-      ? "Email two-factor verification is enabled."
-      : "Tofaktorbekræftelse via e-mail er slået til.");
-    await loadMfaSettings();
-  } catch (error) {
-    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
-      showNotice(languageSetting.value === "en"
-        ? "Email verification is not available yet because the secure server function is not deployed."
-        : "E-mailbekræftelse er ikke tilgængelig endnu, fordi den sikre serverfunktion ikke er installeret.", true);
-    } else {
-      displayError(error);
-    }
-  } finally {
-    button.disabled = false;
-  }
-});
-
-mfaLoginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = event.currentTarget.querySelector('button[type="submit"]');
-  button.disabled = true;
-  try {
-    await invokeMfa("verify-login", {
-      code: document.querySelector("#mfa-login-code").value.trim()
-    });
-    event.currentTarget.reset();
-    if (!currentSession) throw new Error("Sessionen mangler. Log ind igen.");
-    showSignedIn(currentSession.user);
-    showNotice(languageSetting.value === "en" ? "Email code verified. You are signed in." : "E-mailkoden er godkendt. Du er logget ind.");
-  } catch (error) {
-    displayError(error);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.querySelector("#mfa-resend").addEventListener("click", async (event) => {
-  event.currentTarget.disabled = true;
-  try {
-    await invokeMfa("start-login");
-    showNotice(languageSetting.value === "en" ? "A new code has been sent." : "En ny kode er sendt.");
-  } catch (error) {
-    displayError(error);
-  } finally {
-    event.currentTarget.disabled = false;
-  }
-});
 
 document.querySelector("#export-data").addEventListener("click", async (event) => {
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    const exported = await invokeMfa("export-data");
+    const exported = await invokePrivacyFunction("export-data");
     const blob = new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" });
     const downloadUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -687,7 +509,7 @@ document.querySelector("#export-data").addEventListener("click", async (event) =
     URL.revokeObjectURL(downloadUrl);
     showNotice(languageSetting.value === "en" ? "Your data export has been downloaded." : "Dine data er hentet.");
   } catch (error) {
-    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+    if (error.message === "ACCOUNT_FUNCTION_UNAVAILABLE" || error.message === "ACCOUNT_FUNCTION_NOT_DEPLOYED") {
       showNotice(languageSetting.value === "en"
         ? "Data export is available after the secure server function is set up."
         : "Dataeksport bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
@@ -701,19 +523,19 @@ document.querySelector("#export-data").addEventListener("click", async (event) =
 
 document.querySelector("#delete-account").addEventListener("click", async (event) => {
   const confirmation = languageSetting.value === "en"
-    ? window.prompt("This permanently deletes your profile, deeds, and MFA settings. Type DELETE to continue.")
-    : window.prompt("Dette sletter din profil, dine gerninger og MFA-indstillinger permanent. Skriv SLET for at fortsætte.");
+    ? window.prompt("This permanently deletes your profile and deeds. Type DELETE to continue.")
+    : window.prompt("Dette sletter din profil og dine gerninger permanent. Skriv SLET for at fortsætte.");
   if (confirmation !== (languageSetting.value === "en" ? "DELETE" : "SLET")) return;
 
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    await invokeMfa("delete-account");
+    await invokePrivacyFunction("delete-account");
     await supabase.auth.signOut({ scope: "local" });
     showSignedOut();
     showNotice(languageSetting.value === "en" ? "Your account and app data have been deleted." : "Din konto og dine appdata er slettet.");
   } catch (error) {
-    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+    if (error.message === "ACCOUNT_FUNCTION_UNAVAILABLE" || error.message === "ACCOUNT_FUNCTION_NOT_DEPLOYED") {
       showNotice(languageSetting.value === "en"
         ? "Account deletion is available after the secure server function is set up."
         : "Kontosletning bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
@@ -763,9 +585,6 @@ function applyPreferences() {
   document.querySelector(".privacy-link").textContent = english
     ? "Read about privacy and data"
     : "Læs om privatliv og data";
-  document.querySelector("#mfa-screen .eyebrow").textContent = english ? "EXTRA PROTECTION" : "EKSTRA BESKYTTELSE";
-  document.querySelector("#mfa-title").textContent = english ? "Check your email" : "Tjek din e-mail";
-  document.querySelector("#mfa-login-code").placeholder = english ? "6 digits" : "6 cifre";
   document.querySelector("#auth-form label[for='nickname']").textContent = english ? "Nickname" : "Kaldenavn";
   document.querySelector("#auth-form label[for='passcode']").textContent = english ? "Personal passcode" : "Personlig kode";
   document.querySelector("#auth-form .field-hint").textContent = english ? "3–20 letters, numbers or _" : "3–20 bogstaver, tal eller _";
