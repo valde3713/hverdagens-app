@@ -170,6 +170,43 @@
               <p><strong id="profile-score">0</strong> delte gode gerninger</p>
               <button id="profile-signout" class="button button-secondary" type="button">Log ud</button>
             </section>
+            <section class="panel settings-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">GØR APPEN TIL DIN</p><h2>Indstillinger</h2></div>
+                <span class="panel-icon" aria-hidden="true">⚙</span>
+              </div>
+              <div class="settings-grid">
+                <div class="setting-control">
+                  <label for="theme-setting">Tema</label>
+                  <select id="theme-setting">
+                    <option value="light">Lyst</option>
+                    <option value="dark">Mørkt</option>
+                  </select>
+                </div>
+                <div class="setting-control">
+                  <label for="language-setting">Sprog / Language</label>
+                  <select id="language-setting">
+                    <option value="da">Dansk</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+              </div>
+              <form id="password-form" class="settings-form">
+                <h3>Skift personlig kode</h3>
+                <label for="new-passcode">Ny kode</label>
+                <input id="new-passcode" type="password" autocomplete="new-password" minlength="8" placeholder="Mindst 8 tegn" required>
+                <label for="confirm-new-passcode">Gentag ny kode</label>
+                <input id="confirm-new-passcode" type="password" autocomplete="new-password" minlength="8" placeholder="Skriv koden igen" required>
+                <button class="button button-secondary" type="submit">Gem ny kode</button>
+              </form>
+              <form id="nickname-form" class="settings-form">
+                <h3>Skift kaldenavn</h3>
+                <p id="nickname-lock-message" class="setting-hint"></p>
+                <label for="new-nickname">Nyt kaldenavn</label>
+                <input id="new-nickname" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" placeholder="3–20 bogstaver, tal eller _" required disabled>
+                <button id="nickname-submit" class="button button-secondary" type="submit" disabled>Gem kaldenavn</button>
+              </form>
+            </section>
           </section>
         </main>
         <footer class="footer"><span>En god gerning ad gangen.</span><span>Hverdagens app <span aria-hidden="true">✳</span></span></footer>
