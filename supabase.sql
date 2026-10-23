@@ -535,4 +535,91 @@ grant execute on function public.change_profile_nickname(text) to authenticated;
 grant select on public.profiles to authenticated;
 grant select, insert, delete on public.activities to authenticated;
 
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_users enable row level security;
+revoke all on public.admin_users from public, anon, authenticated;
+
+create or replace function public.get_admin_dashboard()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  account_id uuid := auth.uid();
+  dashboard_data jsonb;
+begin
+  if account_id is null then
+    raise exception 'Log ind for at fortsætte.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.admin_users as admins
+    where admins.user_id = account_id
+  ) then
+    raise exception 'Denne konto har ikke admin-adgang.';
+  end if;
+
+  select jsonb_build_object(
+    'generated_at', now(),
+    'profiles', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'nickname', p.nickname,
+          'display_name', case
+            when p.display_name_mode = 'real_name' and private.real_name is not null
+              then private.real_name
+            else p.nickname
+          end,
+          'bio', p.bio,
+          'created_at', p.created_at,
+          'public_profile_enabled', coalesce(private.public_profile_enabled, false),
+          'public_profile_enabled_at', private.public_profile_enabled_at,
+          'terms_accepted_at', private.terms_accepted_at,
+          'privacy_accepted_at', private.privacy_accepted_at,
+          'activity_count', (
+            select count(*)
+            from public.activities as counted
+            where counted.user_id = p.id
+          )
+        )
+        order by p.created_at desc
+      )
+      from public.profiles as p
+      left join public.profile_private as private on private.user_id = p.id
+    ), '[]'::jsonb),
+    'activities', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'nickname', p.nickname,
+          'description', activity.description,
+          'created_at', activity.created_at
+        )
+        order by activity.created_at desc
+      )
+      from public.activities as activity
+      join public.profiles as p on p.id = activity.user_id
+    ), '[]'::jsonb)
+  )
+  into dashboard_data;
+
+  return dashboard_data;
+end;
+$$;
+
+revoke all on function public.get_admin_dashboard() from public, anon;
+grant execute on function public.get_admin_dashboard() to authenticated;
+
+insert into public.admin_users (user_id)
+select id
+from auth.users
+where lower(email) = 'admin@users.hverdagens.invalid'
+on conflict (user_id) do nothing;
+
 notify pgrst, 'reload schema';

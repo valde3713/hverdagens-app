@@ -91,22 +91,8 @@ function renderDashboard(data) {
 
 async function loadDashboard() {
   if (!client) throw new Error("Supabase er ikke konfigureret på denne side.");
-  const { data, error } = await client.functions.invoke("admin-dashboard", {
-    body: {},
-    headers: { "x-region": "eu-central-1" },
-  });
-  if (error) {
-    if (error.context instanceof Response) {
-      let response;
-      try {
-        response = await error.context.clone().json();
-      } catch {
-        response = undefined;
-      }
-      if (typeof response?.error === "string") throw new Error(response.error);
-    }
-    throw error;
-  }
+  const { data, error } = await client.rpc("get_admin_dashboard");
+  if (error) throw error;
   if (!Array.isArray(data?.profiles) || !Array.isArray(data?.activities)) {
     throw new Error("Serveren returnerede et ugyldigt dashboard-svar.");
   }

@@ -24,19 +24,11 @@ Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst pri
 
 ## Privat adminoversigt
 
-`/codespace-time/` logger ind med en eksisterende konto og har ingen oprettelsesmulighed. Data udleveres kun af Edge Function `admin-dashboard`, når den verificerede Supabase-brugers id matcher den server-side hemmelighed `ADMIN_USER_ID`. Funktionen returnerer profiler og aktiviteter, men ikke private e-mailadresser eller navne, der ikke er valgt som offentlige. Koden til godkendelse ligger aldrig i GitHub Pages-frontend.
+`/codespace-time/` logger ind med en eksisterende konto og har ingen oprettelsesmulighed. Databasefunktionen `get_admin_dashboard()` returnerer kun data, hvis den verificerede bruger står i den private tabel `admin_users`. Tabellen har ingen klientadgang; funktionen viser ikke private e-mailadresser.
 
-For at aktivere adminoversigten skal du finde din eksisterende admin-kontos bruger-id under **Supabase Dashboard → Authentication → Users**, sætte det som Edge Function secret `ADMIN_USER_ID` (del det ikke i chat eller frontend), og deploye funktionen:
+For at aktivere adminoversigten skal du køre hele `supabase.sql` i **Supabase Dashboard → SQL Editor**. Inden du kører den, erstat `INDSAET-DIT-SUPABASE-USER-UUID-HER` nederst i SQL-filen med din eksisterende admin-kontos bruger-id fra **Authentication → Users**. Brug kun din egen konto som admin. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
 
-```sh
-npm install --save-dev supabase
-npx supabase login
-npx supabase link --project-ref crgcciwqyjemxeuehtfl
-npx supabase secrets set ADMIN_USER_ID=DIT-SUPABASE-USER-UUID
-npx supabase functions deploy admin-dashboard
-```
-
-Kør kommandoerne fra projektmappen. Brug kun din egen konto som admin. Indtil secret er sat og funktionen deployet, afviser backend adminvisningen. Funktionen er sat til kun at behandle forespørgsler i `eu-central-1`.
+Hvis migrationen allerede er kørt, kan du i stedet køre kun den sidste adminsektion fra SQL-filen efter at have indsat dit bruger-id.
 
 Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
 
