@@ -20,6 +20,7 @@ drop function if exists public.get_public_profile(uuid);
 drop function if exists public.get_my_profile();
 drop function if exists public.export_my_data();
 drop function if exists public.delete_my_account();
+drop function if exists public.get_admin_dashboard();
 
 drop table if exists public.email_mfa_sessions;
 drop table if exists public.email_mfa_challenges;
@@ -537,34 +538,90 @@ grant select, insert, delete on public.activities to authenticated;
 
 create table if not exists public.admin_users (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  access_code_hash text,
+  failed_attempts integer not null default 0,
+  locked_until timestamptz
 );
+
+create extension if not exists pgcrypto with schema extensions;
+
+alter table public.admin_users
+  add column if not exists access_code_hash text,
+  add column if not exists failed_attempts integer not null default 0,
+  add column if not exists locked_until timestamptz;
 
 alter table public.admin_users enable row level security;
 revoke all on public.admin_users from public, anon, authenticated;
 
-create or replace function public.get_admin_dashboard()
+create or replace function public.get_admin_dashboard(requested_code text)
 returns jsonb
 language plpgsql
-stable
 security definer
 set search_path = ''
 as $$
 declare
   account_id uuid := auth.uid();
+  admin_record public.admin_users%rowtype;
   dashboard_data jsonb;
 begin
   if account_id is null then
     raise exception 'Log ind for at fortsætte.';
   end if;
 
-  if not exists (
-    select 1
-    from public.admin_users as admins
-    where admins.user_id = account_id
-  ) then
+  select *
+  into admin_record
+  from public.admin_users as admins
+  where admins.user_id = account_id
+  for update;
+
+  if not found then
     raise exception 'Denne konto har ikke admin-adgang.';
   end if;
+
+  if admin_record.locked_until > now() then
+    return jsonb_build_object(
+      'error',
+      'For mange forkerte forsøg. Vent 15 minutter, og prøv igen.'
+    );
+  end if;
+
+  if admin_record.locked_until is not null then
+    update public.admin_users
+    set failed_attempts = 0,
+        locked_until = null
+    where user_id = account_id;
+    admin_record.failed_attempts := 0;
+  end if;
+
+  if admin_record.access_code_hash is null then
+    return jsonb_build_object(
+      'error',
+      'Admin-koden er ikke sat op endnu. Følg SQL-instruktionen i README.'
+    );
+  end if;
+
+  if requested_code is null
+     or char_length(requested_code) not between 4 and 64
+     or requested_code !~ '^[A-Za-z0-9]+$'
+     or extensions.crypt(requested_code, admin_record.access_code_hash) <> admin_record.access_code_hash then
+    update public.admin_users
+    set failed_attempts = failed_attempts + 1,
+        locked_until = case
+          when failed_attempts + 1 >= 5 then now() + interval '15 minutes'
+          else null
+        end
+    where user_id = account_id;
+    return jsonb_build_object(
+      'error',
+      'Admin-koden er forkert. Fem forkerte forsøg låser adgangen i 15 minutter.'
+    );
+  end if;
+
+  update public.admin_users
+  set failed_attempts = 0,
+      locked_until = null
+  where user_id = account_id;
 
   select jsonb_build_object(
     'generated_at', now(),
@@ -613,8 +670,8 @@ begin
 end;
 $$;
 
-revoke all on function public.get_admin_dashboard() from public, anon;
-grant execute on function public.get_admin_dashboard() to authenticated;
+revoke all on function public.get_admin_dashboard(text) from public, anon;
+grant execute on function public.get_admin_dashboard(text) to authenticated;
 
 insert into public.admin_users (user_id)
 select id

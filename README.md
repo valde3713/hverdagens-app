@@ -24,11 +24,28 @@ Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst pri
 
 ## Privat adminoversigt
 
-`/codespace-time/` logger ind med en eksisterende konto og har ingen oprettelsesmulighed. Databasefunktionen `get_admin_dashboard()` returnerer kun data, hvis den verificerede bruger står i den private tabel `admin_users`. Tabellen har ingen klientadgang; funktionen viser ikke private e-mailadresser.
+`/codespace-time/` logger ind med en eksisterende konto og en ekstra admin-kode på 4–64 bogstaver og/eller tal; der er ingen oprettelsesmulighed. Databasefunktionen `get_admin_dashboard()` returnerer kun data, hvis den verificerede bruger står i den private tabel `admin_users` og indtaster korrekt kode. Databasen gemmer kun en bcrypt-hash, begrænser forkerte forsøg og viser ikke private e-mailadresser.
 
-For at aktivere adminoversigten skal du køre hele `supabase.sql` i **Supabase Dashboard → SQL Editor**. Inden du kører den, erstat `INDSAET-DIT-SUPABASE-USER-UUID-HER` nederst i SQL-filen med din eksisterende admin-kontos bruger-id fra **Authentication → Users**. Brug kun din egen konto som admin. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
+For at aktivere adminoversigten skal du køre hele `supabase.sql` i **Supabase Dashboard → SQL Editor**. Derefter vælger du selv en admin-kode og kører den særskilte SQL-kommando i README'en efter at have erstattet eksempelteksten. Koden gemmes som bcrypt-hash; del den ikke. Brug kun din egen konto som admin. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
 
-Hvis migrationen allerede er kørt, kan du i stedet køre kun den sidste adminsektion fra SQL-filen efter at have indsat dit bruger-id.
+Kør dette i SQL Editor efter migrationen, og erstat teksten `SKRIV-DIN-EGEN-KODE-HER` med din egen kode på 4–64 bogstaver og/eller tal:
+
+```sql
+update public.admin_users
+set access_code_hash = extensions.crypt(
+  'SKRIV-DIN-EGEN-KODE-HER',
+  extensions.gen_salt('bf')
+)
+where user_id in (
+  select id
+  from auth.users
+  where lower(email) = 'admin@users.hverdagens.invalid'
+);
+```
+
+Koden gemmes som bcrypt-hash. Vælg helst en længere blanding af bogstaver og tal, og del ikke den rigtige kode. Efter fem forkerte forsøg låses admin-koden i 15 minutter.
+
+Hvis migrationen allerede er kørt, kør den opdaterede adminsektion fra SQL-filen, og sæt derefter admin-koden med SQL-kommandoen.
 
 Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
 

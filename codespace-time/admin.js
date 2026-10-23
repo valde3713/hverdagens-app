@@ -91,8 +91,12 @@ function renderDashboard(data) {
 
 async function loadDashboard() {
   if (!client) throw new Error("Supabase er ikke konfigureret på denne side.");
-  const { data, error } = await client.rpc("get_admin_dashboard");
+  const accessCode = document.querySelector("#admin-access-code").value;
+  const { data, error } = await client.rpc("get_admin_dashboard", {
+    requested_code: accessCode,
+  });
   if (error) throw error;
+  if (typeof data?.error === "string") throw new Error(data.error);
   if (!Array.isArray(data?.profiles) || !Array.isArray(data?.activities)) {
     throw new Error("Serveren returnerede et ugyldigt dashboard-svar.");
   }
