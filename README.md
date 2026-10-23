@@ -22,6 +22,22 @@ Adgangskoder skal være mindst 8 tegn. Brugere kan logge ind fra flere enheder m
 
 Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst privatlivsinformationen. Brugeren vælger, om andre indloggede brugere ser kaldenavn eller eget navn. E-mailen forbliver privat. Offentlige profiler kan søges frem fra pointtavlen og vise profiltekst og delte gerninger. Eksisterende brugere skal aktivt slå offentlig profil til i indstillinger, før de vises i søgning og på pointtavlen. De kan også slå offentlig visning fra igen. Pointtavlen bygger på brugernes egne indberetninger og er ikke en verificeret konkurrence.
 
+## Privat adminoversigt
+
+`/codespace-time/` logger ind med en eksisterende konto og har ingen oprettelsesmulighed. Data udleveres kun af Edge Function `admin-dashboard`, når den verificerede Supabase-brugers id matcher den server-side hemmelighed `ADMIN_USER_ID`. Funktionen returnerer profiler og aktiviteter, men ikke private e-mailadresser eller navne, der ikke er valgt som offentlige. Koden til godkendelse ligger aldrig i GitHub Pages-frontend.
+
+For at aktivere adminoversigten skal du finde din eksisterende admin-kontos bruger-id under **Supabase Dashboard → Authentication → Users**, sætte det som Edge Function secret `ADMIN_USER_ID` (del det ikke i chat eller frontend), og deploye funktionen:
+
+```sh
+npm install --save-dev supabase
+npx supabase login
+npx supabase link --project-ref crgcciwqyjemxeuehtfl
+npx supabase secrets set ADMIN_USER_ID=DIT-SUPABASE-USER-UUID
+npx supabase functions deploy admin-dashboard
+```
+
+Kør kommandoerne fra projektmappen. Brug kun din egen konto som admin. Indtil secret er sat og funktionen deployet, afviser backend adminvisningen. Funktionen er sat til kun at behandle forespørgsler i `eu-central-1`.
+
 Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
 
 Kør hele `supabase.sql` i SQL Editor, før den opdaterede app bruges. Migrationen opretter de offentlige profil- og private kontaktdatafunktioner, vilkårsregistrering samt selvbetjent kontoeksport/-sletning. Eksisterende profiler bliver ikke automatisk offentlige; hver bruger skal selv slå offentlig profil til. Migrationen fjerner de gamle, inaktive e-mail-2FA-tabeller.

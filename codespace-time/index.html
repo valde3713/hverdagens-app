@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7ef">
+    <meta name="description" content="Administrationsoversigt for Hverdagens app.">
+    <title>Admin — Hverdagens app</title>
+    <link rel="icon" href="../leaf.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { min-height: 100vh; }
+      .admin-shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+      .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .admin-card { width: min(460px, 100%); margin: 72px auto; padding: 32px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+      .admin-card h1, .admin-heading h1 { margin: 24px 0 8px; color: var(--green-dark); font-size: 30px; letter-spacing: -1px; }
+      .admin-card > p, .admin-heading > p { color: #758379; font-size: 13px; line-height: 1.7; }
+      .admin-card form { margin-top: 24px; }
+      .admin-message { min-height: 20px; margin: 14px 0 0; color: #8a4b36; font-size: 12px; line-height: 1.6; }
+      .admin-message[data-state="success"] { color: var(--green); }
+      .admin-heading { margin: 48px 0 24px; }
+      .admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
+      .admin-stat, .admin-panel { border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+      .admin-stat { padding: 18px; }
+      .admin-stat span { display: block; color: #758379; font-size: 12px; }
+      .admin-stat strong { display: block; margin-top: 8px; color: var(--green-dark); font-size: 28px; }
+      .admin-panel { margin-top: 18px; padding: 20px; overflow-x: auto; }
+      .admin-panel h2 { margin: 0 0 16px; color: var(--green-dark); font-size: 17px; }
+      .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+      .admin-table th, .admin-table td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      .admin-table th { color: #758379; font-size: 10px; letter-spacing: .5px; text-transform: uppercase; }
+      .admin-table td { max-width: 420px; overflow-wrap: anywhere; }
+      .admin-table tr:last-child td { border-bottom: 0; }
+      .admin-muted { color: #849187; }
+      .admin-actions { display: flex; align-items: center; gap: 10px; }
+      .admin-actions .button { min-height: 38px; }
+      .admin-privacy { margin-top: 18px; color: #758379; font-size: 11px; line-height: 1.7; }
+      @media (max-width: 680px) {
+        .admin-shell { width: min(100% - 24px, 1120px); padding-top: 20px; }
+        .admin-card { margin: 48px auto; padding: 24px; }
+        .admin-heading { margin-top: 36px; }
+        .admin-stats { grid-template-columns: 1fr; gap: 9px; }
+        .admin-stat { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }
+        .admin-stat strong { margin-top: 0; font-size: 22px; }
+        .admin-panel { padding: 15px; }
+        .admin-table { min-width: 880px; }
+      }
+    </style>
+    <script src="../config.js"></script>
+    <script src="../vendor/supabase.js"></script>
+    <script defer src="./admin.js"></script>
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-topbar">
+        <a class="brand" href="../">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
+          </span>
+          <span>hverdagens<span class="brand-light">app</span></span>
+        </a>
+        <div id="admin-actions" class="admin-actions" hidden>
+          <span id="admin-identity" class="admin-muted"></span>
+          <button id="admin-signout" class="button button-secondary" type="button">Log ud</button>
+        </div>
+      </header>
+
+      <section id="admin-login" class="admin-card" aria-labelledby="login-title">
+        <p class="eyebrow">PRIVAT ADMINOMRÅDE</p>
+        <h1 id="login-title">Log ind som admin</h1>
+        <p>Brug din eksisterende Hverdagens-konto. Der er ingen oprettelse fra denne side, og backend kontrollerer, om kontoen er godkendt som admin.</p>
+        <form id="admin-login-form">
+          <label for="admin-nickname">Admin-kaldenavn</label>
+          <input id="admin-nickname" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="admin" required>
+          <label for="admin-password">Personlig kode</label>
+          <input id="admin-password" type="password" autocomplete="current-password" minlength="8" required>
+          <button class="button button-primary button-wide" type="submit">Log ind <span aria-hidden="true">→</span></button>
+        </form>
+        <p id="admin-login-message" class="admin-message" role="status" aria-live="polite"></p>
+        <p class="admin-privacy">Oversigten viser profiler og aktiviteter. Private e-mailadresser og navne, der ikke er valgt som offentlige, vises ikke.</p>
+      </section>
+
+      <section id="admin-dashboard" hidden>
+        <header class="admin-heading">
+          <p class="eyebrow">PRIVAT ADMINOMRÅDE</p>
+          <h1>Profiler og aktiviteter</h1>
+          <p id="admin-updated"></p>
+        </header>
+        <p id="admin-dashboard-message" class="admin-message" role="status" aria-live="polite"></p>
+        <div class="admin-stats">
+          <article class="admin-stat"><span>Profiler</span><strong id="admin-profile-count">0</strong></article>
+          <article class="admin-stat"><span>Aktiviteter</span><strong id="admin-activity-count">0</strong></article>
+          <article class="admin-stat"><span>Offentlige profiler</span><strong id="admin-public-count">0</strong></article>
+        </div>
+        <section class="admin-panel">
+          <h2>Profiler</h2>
+          <table class="admin-table">
+            <thead><tr><th>Kaldenavn</th><th>Visningsnavn</th><th>Profiltekst</th><th>Status</th><th>Oprettet</th><th>Samtykke</th><th>Gerninger</th></tr></thead>
+            <tbody id="admin-profiles"></tbody>
+          </table>
+        </section>
+        <section class="admin-panel">
+          <h2>Alle aktiviteter</h2>
+          <table class="admin-table">
+            <thead><tr><th>Bruger</th><th>Aktivitet</th><th>Dato</th></tr></thead>
+            <tbody id="admin-activities"></tbody>
+          </table>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
