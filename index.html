@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7ef">
+    <meta name="description" content="Del de små ting, du gør for naturen, og følg med på pointtavlen.">
+    <title>Hverdagens app</title>
+    <link rel="icon" href="./leaf.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <main id="auth-screen" class="auth-screen">
+      <section class="auth-card" aria-labelledby="auth-title">
+        <a class="brand brand-centered" href="./">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
+          </span>
+          <span>hverdagens<span class="brand-light">app</span></span>
+        </a>
+        <p class="eyebrow">SMÅ VALG GØR EN FORSKEL</p>
+        <h1 id="auth-title">Gør lidt godt<br>for naturen.</h1>
+        <p class="auth-intro">Skriv dagens grønne gerninger ned, og inspirér hinanden til flere.</p>
+
+        <div class="auth-tabs" role="tablist" aria-label="Vælg login eller opret profil">
+          <button id="login-tab" class="auth-tab active" type="button" role="tab" aria-selected="true">Log ind</button>
+          <button id="signup-tab" class="auth-tab" type="button" role="tab" aria-selected="false">Opret profil</button>
+        </div>
+
+        <form id="auth-form">
+          <label for="nickname">Kaldenavn</label>
+          <input id="nickname" name="nickname" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" placeholder="fx grønven" required>
+          <p class="field-hint">3–20 bogstaver, tal eller _</p>
+          <label for="passcode">Personlig kode</label>
+          <input id="passcode" name="passcode" type="password" autocomplete="current-password" minlength="8" placeholder="Mindst 8 tegn" required>
+          <div id="confirm-field" class="confirm-field" hidden>
+            <label for="confirm-passcode">Gentag koden</label>
+            <input id="confirm-passcode" name="confirmPasscode" type="password" autocomplete="new-password" minlength="8" placeholder="Skriv koden igen">
+          </div>
+          <button id="auth-submit" class="button button-primary button-wide" type="submit">Log ind <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="auth-footnote">Ingen e-mail nødvendig. Husk din personlige kode — den kan ikke nulstilles.</p>
+        <p id="setup-message" class="setup-message" hidden>Supabase er ikke sat op endnu. Følg trinene i README.md, og indsæt projektets URL og offentlige nøgle i config.js.</p>
+      </section>
+      <div class="auth-art" aria-hidden="true">
+        <span class="sun"></span>
+        <span class="hill hill-back"></span>
+        <span class="hill hill-front"></span>
+        <span class="art-leaf leaf-one">✳</span>
+        <span class="art-leaf leaf-two">✳</span>
+        <span class="art-caption">Naturen takker<br>for hver lille ting.</span>
+      </div>
+    </main>
+
+    <div id="app-shell" class="app-shell" hidden>
+      <aside class="sidebar">
+        <a class="brand" href="#home" aria-label="Hverdagens app, forside">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
+          </span>
+          <span>hverdagens<span class="brand-light">app</span></span>
+        </a>
+        <p class="nav-label">MENU</p>
+        <nav class="side-nav" aria-label="Hovedmenu">
+          <button class="nav-item active" data-page="home" type="button"><span aria-hidden="true">⌂</span> Min hverdag</button>
+          <button class="nav-item" data-page="leaderboard" type="button"><span aria-hidden="true">♧</span> Pointtavle</button>
+          <button class="nav-item" data-page="profile" type="button"><span aria-hidden="true">◉</span> Min profil</button>
+        </nav>
+        <div class="sidebar-note">
+          <span class="note-icon" aria-hidden="true">✳</span>
+          <p>Små skridt tæller.<br><strong>Bliv ved med at gøre en forskel.</strong></p>
+        </div>
+        <button id="signout-button" class="signout-button" type="button">↪ <span>Log ud</span></button>
+      </aside>
+
+      <div class="main-column">
+        <header class="topbar">
+          <span class="topbar-date" id="today-label"></span>
+          <button class="user-chip" data-page="profile" type="button">
+            <span class="avatar" id="avatar-initial">G</span>
+            <span id="topbar-nickname">Grønven</span>
+            <span class="user-chevron" aria-hidden="true">⌄</span>
+          </button>
+        </header>
+
+        <main class="page-content">
+          <section id="home-page" class="page">
+            <div class="welcome-row">
+              <div>
+                <p class="eyebrow">DIN GRØNNE HVERDAG</p>
+                <h1>Hej, <span id="welcome-nickname">Grønven</span> <span class="wave" aria-hidden="true">✳</span></h1>
+                <p class="page-subtitle">Hver lille handling gør en forskel.</p>
+              </div>
+              <div class="streak-badge"><span aria-hidden="true">☀</span> Gør dagen grønnere</div>
+            </div>
+
+            <section class="hero-card">
+              <div class="hero-copy">
+                <span class="hero-tag">DAGENS REFLEKSION</span>
+                <h2>Hvad har du gjort godt for naturen i dag?</h2>
+                <p>Ingen handling er for lille. Del den med fællesskabet.</p>
+              </div>
+              <div class="hero-illustration" aria-hidden="true">
+                <span class="hero-sun"></span><span class="hero-sprout">✳</span>
+              </div>
+            </section>
+
+            <div class="dashboard-grid">
+              <section class="panel entry-panel">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">DIN DAGBOG</p><h2>Tilføj en god gerning</h2></div>
+                  <span class="panel-icon" aria-hidden="true">＋</span>
+                </div>
+                <form id="activity-form">
+                  <label for="activity-description">Hvad gjorde du?</label>
+                  <textarea id="activity-description" name="description" maxlength="240" rows="3" placeholder="Fx Jeg cyklede på arbejde i stedet for at tage bilen…" required></textarea>
+                  <div class="form-bottom">
+                    <span class="character-count" id="character-count">0 / 240</span>
+                    <button class="button button-primary" type="submit">Del min gerning <span aria-hidden="true">→</span></button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="panel score-panel">
+                <p class="eyebrow">DIT BIDRAG</p>
+                <div class="score-number" id="my-score">0</div>
+                <p class="score-label">gode gerninger i alt</p>
+                <div class="score-divider"></div>
+                <div class="score-bottom"><span>Din placering</span><strong id="my-rank">–</strong></div>
+                <button class="text-button" data-page="leaderboard" type="button">Se pointtavlen <span aria-hidden="true">→</span></button>
+              </section>
+            </div>
+
+            <section class="panel recent-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">SMÅ SKRIDT, STOR FORSKEL</p><h2>Dine seneste gerninger</h2></div>
+                <span class="recent-count" id="recent-count">0 DELT</span>
+              </div>
+              <div id="recent-list" class="recent-list"></div>
+            </section>
+          </section>
+
+          <section id="leaderboard-page" class="page" hidden>
+            <div class="page-heading">
+              <p class="eyebrow">VI GØR DET SAMMEN</p>
+              <h1>Pointtavlen <span class="wave" aria-hidden="true">✳</span></h1>
+              <p class="page-subtitle">Hver delt gerning giver ét point. Alle kan være med!</p>
+            </div>
+            <section class="panel leaderboard-panel">
+              <div class="panel-heading"><div><p class="eyebrow">FÆLLESSKABET</p><h2>Grønne hverdagshelte</h2></div><span class="panel-icon" aria-hidden="true">♧</span></div>
+              <div class="leaderboard-head"><span>PLACERING</span><span>GRØN HVERDAGSHELT</span><span>GERNINGER</span></div>
+              <div id="leaderboard-list" class="leaderboard-list"></div>
+            </section>
+          </section>
+
+          <section id="profile-page" class="page" hidden>
+            <div class="page-heading">
+              <p class="eyebrow">DET ER DIG, DER GØR EN FORSKEL</p>
+              <h1>Min profil <span class="wave" aria-hidden="true">✳</span></h1>
+              <p class="page-subtitle">Dit kaldenavn og dine grønne gerninger.</p>
+            </div>
+            <section class="panel profile-panel">
+              <div class="profile-avatar" id="profile-avatar">G</div>
+              <div><p class="eyebrow">DIT KALDENAVN</p><h2 id="profile-nickname">Grønven</h2><p class="page-subtitle">En del af fællesskabet for grønnere hverdage.</p></div>
+            </section>
+            <section class="panel profile-stats">
+              <p class="eyebrow">DIT BIDRAG TIL NATUREN</p>
+              <p><strong id="profile-score">0</strong> delte gode gerninger</p>
+              <button id="profile-signout" class="button button-secondary" type="button">Log ud</button>
+            </section>
+          </section>
+        </main>
+        <footer class="footer"><span>En god gerning ad gangen.</span><span>Hverdagens app <span aria-hidden="true">✳</span></span></footer>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
