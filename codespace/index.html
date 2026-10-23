@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7ef">
+    <meta name="description" content="Download Hverdagens app til Android.">
+    <title>Download appen — Hverdagens app</title>
+    <link rel="icon" href="../leaf.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .download-page { display: grid; min-height: 100vh; place-items: center; padding: 24px; }
+      .download-card { width: min(440px, 100%); padding: 36px; border: 1px solid var(--line); border-radius: 20px; background: var(--white); box-shadow: 0 18px 60px #263b3010; }
+      .download-card h1 { margin: 24px 0 12px; color: var(--green-dark); font-size: 32px; letter-spacing: -1px; }
+      .download-card p { color: #758379; font-size: 14px; line-height: 1.7; }
+      .download-card .button { margin: 12px 0; }
+      .download-note { font-size: 12px !important; }
+      @media (max-width: 480px) { .download-card { padding: 26px; } }
+    </style>
+  </head>
+  <body>
+    <main class="download-page">
+      <section class="download-card">
+        <a class="brand" href="../">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
+          </span>
+          <span>hverdagens<span class="brand-light">app</span></span>
+        </a>
+        <p class="eyebrow" style="margin-top: 34px">ANDROID</p>
+        <h1>Hent appen</h1>
+        <p>Download Hverdagens app til din Android-enhed. Åbn APK-filen, når download er færdig, og følg vejledningen på skærmen.</p>
+        <a class="button button-primary button-wide" href="./hverdagens-app.apk" download>Download APK <span aria-hidden="true">↓</span></a>
+        <p class="download-note">Dette er en testversion, ikke fra Google Play. Android kan bede dig om at tillade installation fra denne kilde.</p>
+        <a class="privacy-link" href="../">Tilbage til Hverdagens app</a>
+      </section>
+    </main>
+  </body>
+</html>
