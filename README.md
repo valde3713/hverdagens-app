@@ -16,13 +16,44 @@ En statisk, dansk app til GitHub Pages. Brugere logger ind med kaldenavn og pers
    ```
 
    Den offentlige anon key er beregnet til klientapps. Læg aldrig projektets `service_role`-nøgle i denne app.
-4. Under **Authentication → Providers → Email**, slå e-mailbekræftelse fra. Appen bruger et ikke-leveringsdygtigt, syntetisk login-id i stedet for e-mail; brugere kan derfor ikke få tilsendt en nulstillingskode. Profiler med samme kaldenavn kan ikke oprettes to gange.
+4. Under **Authentication → Providers → Email**, slå e-mailbekræftelse fra. Appens adgangskodelogin bruger stadig et syntetisk login-id; tofaktor-e-mailen indstilles separat under profilen.
 
 Adgangskoder skal være mindst 8 tegn. Brugere kan logge ind fra flere enheder med samme kaldenavn og kode. Når man er logget ind, kan adgangskoden ændres under **Min profil → Indstillinger**. Kaldenavn kan ændres efter mindst 36 delte gerninger. Appens tema og sprogvalg gemmes lokalt i browseren. Brugere kan slette egne gerninger; pointtavlen opdateres derefter automatisk.
 
 Pointtavlen viser kaldenavne og antal delte gerninger; selve beskrivelserne er kun synlige for den bruger, der skrev dem. Point gives automatisk for hver indsendelse, så tavlen bygger på tillid og er ikke en verificeret konkurrence.
 
-Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives. Slå e-mailbekræftelse fra, da appens syntetiske loginadresser ikke kan modtage e-mail.
+Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
+
+## E-mail-tofaktor (valgfrit)
+
+Tofaktor kræver en rigtig, bekræftet e-mailadresse. Koderne sendes fra en Supabase Edge Function via Resend; de gemmes kun som HMAC-hash med en serverhemmelighed. SQL-politikkerne afviser appens databaseadgang for en konto med tofaktor slået til, indtil den aktuelle Supabase-login-session har bestået e-mailkoden.
+
+1. Kør først hele `supabase.sql` i SQL Editor. Det opretter tofaktor-tabellerne og beskytter databasepolitikkerne.
+2. Opret en Resend-konto. Verificér et afsenderdomæne, og opret en API-nøgle. Resend skal have lov til at sende til brugerens adresser; testafsenderen kan være begrænset til din egen adresse.
+3. Installér Supabase CLI, log ind, og forbind projektet:
+
+   ```sh
+   npx supabase login
+   npx supabase link --project-ref crgcciwqyjemxeuehtfl
+   ```
+
+4. Lav en hemmelig kode-nøgle lokalt med `openssl rand -hex 32`. Gem den sikkert; del den ikke, og læg den ikke i GitHub.
+5. Gå i Supabase Dashboard til **Project Settings → Edge Functions → Secrets**, og opret disse secrets:
+   - `RESEND_API_KEY`: din Resend API-nøgle.
+   - `MFA_FROM_EMAIL`: en afsender fra dit verificerede domæne, fx `Hverdagens app <kode@ditdomæne.dk>`.
+   - `MFA_APP_ORIGIN`: `https://valde3713.github.io` (kun origin, uden `/hverdagens-app`).
+   - `MFA_CODE_SECRET`: den tilfældige værdi fra trin 4.
+
+   Supabase leverer selv `SUPABASE_URL`, `SUPABASE_ANON_KEY` og `SUPABASE_SERVICE_ROLE_KEY` til Edge Functions. Kopiér aldrig service-role-nøglen ind i frontend.
+6. Fra projektmappen deploy funktionen:
+
+   ```sh
+   npx supabase functions deploy email-mfa
+   ```
+
+7. I appen: **Min profil → Indstillinger → Tofaktorbekræftelse via e-mail**. Indtast din e-mail, hent koden fra indbakken, og bekræft den. Herefter kræves en e-mailkode ved nye login; den godkendte session gælder i 8 timer.
+
+Gem adgang til e-mailkontoen sikkert. Hvis man mister den, kan man ikke gennemføre tofaktorlogin.
 
 ## Kør lokalt
 
@@ -40,4 +71,4 @@ python3 -m http.server 8000
 2. Åbn repositoryets **Settings → Pages**.
 3. Under **Build and deployment** vælg **Deploy from a branch**, vælg `main` og mappen `/ (root)`, og gem.
 
-Appen kræver ingen build-trin. `config.js` skal være udfyldt, inden appen udgives. Hvis databasen allerede er sat op fra en ældre version, skal `supabase.sql` køres igen for at tilføje sletning af gerninger og indstillingerne for kaldenavn.
+Appen kræver ingen build-trin. `config.js` skal være udfyldt, inden appen udgives. Kør hele `supabase.sql` igen efter databaseændringer; filen er skrevet, så eksisterende tabeller og policies kan opdateres.

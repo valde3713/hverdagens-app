@@ -149,6 +149,7 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 .profile-stats p:not(.eyebrow) { display: flex; align-items: baseline; gap: 8px; color: #839084; font-size: 12px; }
 .profile-stats strong { color: var(--green); font: 800 26px "Manrope", sans-serif; }
 .profile-stats .button { margin-top: 5px; }
+.settings-back { margin: 0 0 18px; color: #638063; }
 .settings-panel { margin-top: 16px; padding: 24px; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 15px; }
 .setting-control label, .settings-form label { margin: 0 0 7px; }
@@ -159,6 +160,12 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 .settings-form .button { justify-self: start; min-height: 39px; margin-top: 3px; }
 .settings-form button:disabled, .settings-form input:disabled { opacity: .55; cursor: not-allowed; }
 .setting-hint { margin: 4px 0 9px; color: #849084; font-size: 11px; line-height: 1.6; }
+.mfa-settings { display: block; }
+.mfa-settings form { display: grid; gap: 0; margin-top: 12px; }
+.mfa-settings input { margin-bottom: 12px; font-size: 11px; }
+.mfa-settings .button { justify-self: start; min-height: 39px; }
+.mfa-resend, .mfa-cancel { display: flex; margin: 14px auto 0; color: #668168; }
+.mfa-cancel { margin-top: 6px; color: #8a958b; }
 .footer { display: flex; justify-content: space-between; padding: 18px 5.5%; border-top: 1px solid #e8ece3; color: #a1aaa1; font-size: 9px; }
 .footer span:last-child span { color: #91a48e; }
 .notice { position: fixed; z-index: 10; top: 17px; left: 50%; max-width: min(500px, calc(100vw - 32px)); padding: 12px 18px; transform: translateX(-50%); border: 1px solid #e5eadd; border-radius: 10px; background: #fff; box-shadow: 0 8px 28px #263b3018; color: #526254; font-size: 12px; line-height: 1.5; }

@@ -1,0 +1,4 @@
+project_id = "crgcciwqyjemxeuehtfl"
+
+[functions.email-mfa]
+verify_jwt = true
