@@ -16,15 +16,17 @@ En statisk, dansk app til GitHub Pages. Brugere logger ind med kaldenavn og pers
    ```
 
    Den offentlige anon key er beregnet til klientapps. Læg aldrig projektets `service_role`-nøgle i denne app.
-4. Under **Authentication → Providers → Email**, slå e-mailbekræftelse fra. Appens adgangskodelogin bruger et syntetisk login-id og kræver ikke en e-mailadresse.
+4. Under **Authentication → Providers → Email**, slå e-mailbekræftelse fra. Login bruger kaldenavn og en syntetisk loginadresse. Ved oprettelse indtaster brugeren også en privat kontakt-e-mail; den bruges ikke til login og er ikke bekræftet.
 
 Adgangskoder skal være mindst 8 tegn. Brugere kan logge ind fra flere enheder med samme kaldenavn og kode. Når man er logget ind, kan adgangskoden ændres under **Min profil → Indstillinger**. Kaldenavn kan ændres efter mindst 36 delte gerninger. Appens tema og sprogvalg gemmes lokalt i browseren. Brugere kan hente en JSON-kopi af deres appdata og slette konto og tilhørende data fra **Indstillinger → Dine data**. Brugere kan også slette enkelte gerninger.
 
-Pointtavlen viser kaldenavne og antal delte gerninger; selve beskrivelserne er kun synlige for den bruger, der skrev dem. Point gives automatisk for hver indsendelse, så tavlen bygger på tillid og er ikke en verificeret konkurrence.
+Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst privatlivsinformationen. Brugeren vælger, om andre indloggede brugere ser kaldenavn eller eget navn. E-mailen forbliver privat. Offentlige profiler kan søges frem fra pointtavlen og vise profiltekst og delte gerninger. Eksisterende brugere skal aktivt slå offentlig profil til i indstillinger, før de vises i søgning og på pointtavlen. De kan også slå offentlig visning fra igen. Pointtavlen bygger på brugernes egne indberetninger og er ikke en verificeret konkurrence.
 
 Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
 
-Læs også [privatlivsinformationen](./privacy.html). Supabase-projektet er oplyst at ligge i en EU-region; kontrollér den præcise region i Dashboard. Supabase JavaScript-biblioteket ligger lokalt sammen med appen, så brugerens browser ikke skal hente appkode fra en ekstra CDN. Placering i EU er ikke i sig selv en garanti for overholdelse af GDPR. Indsæt en privat kontaktadresse på privatlivssiden, og få de juridiske oplysninger gennemgået, før appen åbnes for flere brugere.
+Kør hele `supabase.sql` i SQL Editor, før den opdaterede app bruges. Migrationen opretter de offentlige profil- og private kontaktdatafunktioner, vilkårsregistrering samt selvbetjent kontoeksport/-sletning. Eksisterende profiler bliver ikke automatisk offentlige; hver bruger skal selv slå offentlig profil til. Migrationen fjerner de gamle, inaktive e-mail-2FA-tabeller.
+
+Læs også [vilkårene](./terms.html) og [privatlivsinformationen](./privacy.html). Supabase-projektet er oplyst at ligge i en EU-region; kontrollér den præcise region i Dashboard. Supabase JavaScript-biblioteket ligger lokalt sammen med appen, så brugerens browser ikke skal hente appkode fra en ekstra CDN. Placering i EU er ikke i sig selv en garanti for overholdelse af GDPR. Indsæt den dataansvarliges kontaktadresse på privatlivssiden, og få de juridiske oplysninger gennemgået, før appen åbnes bredt.
 
 ## Android- og iOS-app
 

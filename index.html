@@ -33,6 +33,32 @@
           <label for="nickname">Kaldenavn</label>
           <input id="nickname" name="nickname" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" placeholder="fx grønven" required>
           <p class="field-hint">3–20 bogstaver, tal eller _</p>
+          <div id="signup-details" hidden>
+            <label for="contact-email">E-mailadresse (privat)</label>
+            <input id="contact-email" type="email" autocomplete="email" maxlength="254" placeholder="dig@eksempel.dk">
+            <p class="field-hint">E-mailen gemmes privat, er ikke bekræftet og bruges ikke til login. Den kan eventuelt bruges til 2FA senere.</p>
+            <label for="display-name-mode">Navn andre kan se</label>
+            <select id="display-name-mode">
+              <option value="nickname">Mit kaldenavn</option>
+              <option value="real_name">Mit eget navn</option>
+            </select>
+            <div id="signup-real-name-field" hidden>
+              <label for="real-name">Dit eget navn</label>
+              <input id="real-name" autocomplete="name" maxlength="80" placeholder="Dit navn">
+            </div>
+            <div class="consent-group">
+              <label class="consent-label">
+                <input id="terms-accepted" type="checkbox">
+                <span>Jeg accepterer vilkårene.</span>
+                <a id="signup-terms-link" href="./terms.html" target="_blank" rel="noopener">Læs vilkårene</a>
+              </label>
+              <label class="consent-label">
+                <input id="privacy-accepted" type="checkbox">
+                <span>Jeg har læst privatlivsinformationen og forstår, at mit valgte visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.</span>
+                <a id="signup-privacy-link" href="./privacy.html" target="_blank" rel="noopener">Læs privatlivsinformationen</a>
+              </label>
+            </div>
+          </div>
           <label for="passcode">Personlig kode</label>
           <input id="passcode" name="passcode" type="password" autocomplete="current-password" minlength="8" placeholder="Mindst 8 tegn" required>
           <div id="confirm-field" class="confirm-field" hidden>
@@ -41,9 +67,9 @@
           </div>
           <button id="auth-submit" class="button button-primary button-wide" type="submit">Log ind <span aria-hidden="true">→</span></button>
         </form>
-        <p class="auth-footnote">Ingen e-mail nødvendig. Husk din personlige kode — den kan ikke nulstilles.</p>
+        <p class="auth-footnote">E-mailen gemmes privat og bruges ikke til login. Husk din personlige kode — den kan ikke nulstilles.</p>
         <p id="setup-message" class="setup-message" hidden>Supabase er ikke sat op endnu. Følg trinene i README.md, og indsæt projektets URL og offentlige nøgle i config.js.</p>
-        <a class="privacy-link" href="./privacy.html">Læs om privatliv og data</a>
+        <a id="privacy-page-link" class="privacy-link" href="./privacy.html">Læs om privatliv og data</a>
       </section>
       <div class="auth-art" aria-hidden="true">
         <span class="sun"></span>
@@ -155,8 +181,35 @@
             </div>
             <section class="panel leaderboard-panel">
               <div class="panel-heading"><div><p class="eyebrow">FÆLLESSKABET</p><h2>Grønne hverdagshelte</h2></div><span class="panel-icon" aria-hidden="true">♧</span></div>
+              <form id="profile-search-form" class="profile-search">
+                <label for="profile-search">Find en profil</label>
+                <input id="profile-search" type="search" minlength="2" maxlength="80" placeholder="Søg efter visningsnavn">
+                <div id="profile-search-results" class="profile-search-results" aria-live="polite">
+                  <p class="setting-hint">Skriv mindst to tegn for at søge.</p>
+                </div>
+              </form>
               <div class="leaderboard-head"><span>PLACERING</span><span>GRØN HVERDAGSHELT</span><span>GERNINGER</span></div>
               <div id="leaderboard-list" class="leaderboard-list"></div>
+            </section>
+          </section>
+
+          <section id="public-profile-page" class="page" hidden>
+            <div class="page-heading">
+              <button id="back-to-leaderboard" class="text-button settings-back" type="button">← Tilbage til pointtavlen</button>
+              <p class="eyebrow">FÆLLESSKABET</p>
+              <h1 id="public-profile-name">Profil</h1>
+            </div>
+            <section class="panel profile-panel">
+              <div class="profile-avatar" id="public-profile-avatar">H</div>
+              <div>
+                <p class="eyebrow">PROFILTEKST</p>
+                <p id="public-profile-bio" class="page-subtitle"></p>
+              </div>
+            </section>
+            <section class="panel profile-stats">
+              <p class="eyebrow">GODE GERNINGER</p>
+              <p><strong id="public-profile-score">0</strong> <span id="public-profile-score-label">delte gode gerninger</span></p>
+              <div id="public-profile-activities" class="recent-list"></div>
             </section>
           </section>
 
@@ -168,7 +221,7 @@
             </div>
             <section class="panel profile-panel">
               <div class="profile-avatar" id="profile-avatar">G</div>
-              <div><p class="eyebrow">DIT KALDENAVN</p><h2 id="profile-nickname">Grønven</h2><p class="page-subtitle">En del af fællesskabet for grønnere hverdage.</p></div>
+              <div><p class="eyebrow">OFFENTLIGT NAVN</p><h2 id="profile-nickname">Grønven</h2><p id="my-profile-bio" class="page-subtitle"></p></div>
             </section>
             <section class="panel profile-stats">
               <p class="eyebrow">DIT BIDRAG TIL NATUREN</p>
@@ -220,6 +273,27 @@
                 <label for="new-nickname">Nyt kaldenavn</label>
                 <input id="new-nickname" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" placeholder="3–20 bogstaver, tal eller _" required disabled>
                 <button id="nickname-submit" class="button button-secondary" type="submit" disabled>Gem kaldenavn</button>
+              </form>
+              <form id="public-profile-form" class="settings-form">
+                <h3>Offentlig profil</h3>
+                <p class="setting-hint">Andre indloggede brugere kan se dit valgte navn, din profiltekst og dine gerninger. Din e-mail forbliver privat og er ikke bekræftet.</p>
+                <label for="profile-display-name-mode">Navn, andre kan se</label>
+                <select id="profile-display-name-mode">
+                  <option value="nickname">Mit kaldenavn</option>
+                  <option value="real_name">Mit eget navn</option>
+                </select>
+                <label for="profile-real-name">Dit eget navn (privat, hvis kaldenavn vises)</label>
+                <input id="profile-real-name" autocomplete="name" maxlength="80">
+                <label for="profile-bio">Profiltekst (offentlig)</label>
+                <textarea id="profile-bio" maxlength="240" rows="3" placeholder="Fortæl lidt om dig selv"></textarea>
+                <label for="profile-email">E-mailadresse (privat)</label>
+                <input id="profile-email" type="email" autocomplete="email" maxlength="254" required>
+                <label class="consent-label profile-public-consent">
+                  <input id="profile-public-enabled" type="checkbox">
+                  <span>Jeg giver lov til, at mit visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere.</span>
+                </label>
+                <p class="setting-hint">Hvis du fjerner markeringen, skjules profilen, og den kan ikke findes i søgning eller pointtavle. Din e-mail vises aldrig offentligt.</p>
+                <button class="button button-secondary" type="submit">Gem profil</button>
               </form>
             </section>
             <section class="panel data-rights-panel">

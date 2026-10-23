@@ -1,5 +1,5 @@
 const config = window.APP_CONFIG;
-const { createClient, FunctionRegion } = window.supabase;
+const { createClient } = window.supabase;
 const authScreen = document.querySelector("#auth-screen");
 const appShell = document.querySelector("#app-shell");
 const authForm = document.querySelector("#auth-form");
@@ -13,6 +13,12 @@ const confirmField = document.querySelector("#confirm-field");
 const confirmPasscode = document.querySelector("#confirm-passcode");
 const nicknameInput = document.querySelector("#nickname");
 const passcodeInput = document.querySelector("#passcode");
+const signupDetails = document.querySelector("#signup-details");
+const contactEmailInput = document.querySelector("#contact-email");
+const displayNameModeInput = document.querySelector("#display-name-mode");
+const realNameInput = document.querySelector("#real-name");
+const termsAcceptedInput = document.querySelector("#terms-accepted");
+const privacyAcceptedInput = document.querySelector("#privacy-accepted");
 const activityForm = document.querySelector("#activity-form");
 const descriptionInput = document.querySelector("#activity-description");
 const leaderboardList = document.querySelector("#leaderboard-list");
@@ -21,9 +27,12 @@ const themeSetting = document.querySelector("#theme-setting");
 const languageSetting = document.querySelector("#language-setting");
 let supabase;
 let currentUser;
+let currentProfile;
 let authFlow = 0;
 let isSignup = false;
 let noticeTimeout;
+let profileSearchTimer;
+let profileSearchFlow = 0;
 const translations = {
   da: {
     ".nav-item[data-page='home']": "Min hverdag",
@@ -59,11 +68,18 @@ const translations = {
     ".leaderboard-panel .panel-heading .eyebrow": "FÆLLESSKABET",
     ".leaderboard-panel .panel-heading h2": "Grønne hverdagshelte",
     ".leaderboard-head": "PLACERING GRØN HVERDAGSHELT GERNINGER",
+    "#profile-search-form label": "Find en profil",
+    "#profile-search": "Søg efter visningsnavn",
+    "#profile-search-results .setting-hint": "Skriv mindst to tegn for at søge.",
+    "#public-profile-page .page-heading .eyebrow": "FÆLLESSKABET",
+    "#back-to-leaderboard": "← Tilbage til pointtavlen",
+    "#public-profile-page .profile-panel .eyebrow": "PROFILTEKST",
+    "#public-profile-page .profile-stats > .eyebrow": "GODE GERNINGER",
+    "#public-profile-score-label": "delte gode gerninger",
     "#profile-page .page-heading .eyebrow": "DET ER DIG, DER GØR EN FORSKEL",
     "#profile-page .page-heading h1": "Min profil",
-    "#profile-page .page-heading .page-subtitle": "Dit kaldenavn og dine grønne gerninger.",
-    ".profile-panel .eyebrow": "DIT KALDENAVN",
-    ".profile-panel .page-subtitle": "En del af fællesskabet for grønnere hverdage.",
+    "#profile-page .page-heading .page-subtitle": "Dit offentlige navn og dine grønne gerninger.",
+    "#profile-page .profile-panel .eyebrow": "OFFENTLIGT NAVN",
     ".profile-stats > .eyebrow": "DIT BIDRAG TIL NATUREN",
     ".profile-stats p:not(.eyebrow)": "delte gode gerninger",
     "#profile-signout": "Log ud",
@@ -96,6 +112,30 @@ const translations = {
     "label[for='new-nickname']": "Nyt kaldenavn",
     "#new-nickname": "3–20 bogstaver, tal eller _",
     "#nickname-submit": "Gem kaldenavn",
+    "#signup-details label[for='contact-email']": "E-mailadresse (privat)",
+    "#signup-details label[for='display-name-mode']": "Navn andre kan se",
+    "#display-name-mode option[value='nickname']": "Mit kaldenavn",
+    "#display-name-mode option[value='real_name']": "Mit eget navn",
+    "#signup-real-name-field label": "Dit eget navn",
+    "#terms-accepted + span": "Jeg accepterer vilkårene.",
+    "#privacy-accepted + span": "Jeg har læst privatlivsinformationen og forstår, at mit valgte visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.",
+    "#signup-terms-link": "Læs vilkårene",
+    "#signup-privacy-link": "Læs privatlivsinformationen",
+    "#privacy-page-link": "Læs om privatliv og data",
+    "#signup-details .field-hint": "E-mailen gemmes privat, er ikke bekræftet og bruges ikke til login. Den kan eventuelt bruges til 2FA senere.",
+    ".auth-footnote": "E-mailen gemmes privat og bruges ikke til login. Husk din personlige kode — den kan ikke nulstilles.",
+    "#public-profile-form h3": "Offentlig profil",
+    "#public-profile-form .setting-hint": "Andre indloggede brugere kan se dit valgte navn, din profiltekst og dine gerninger. Din e-mail forbliver privat og er ikke bekræftet.",
+    "label[for='profile-display-name-mode']": "Navn, andre kan se",
+    "#profile-display-name-mode option[value='nickname']": "Mit kaldenavn",
+    "#profile-display-name-mode option[value='real_name']": "Mit eget navn",
+    "label[for='profile-real-name']": "Dit eget navn (privat, hvis kaldenavn vises)",
+    "label[for='profile-bio']": "Profiltekst (offentlig)",
+    "#profile-bio": "Fortæl lidt om dig selv",
+    "label[for='profile-email']": "E-mailadresse (privat)",
+    "#public-profile-form button": "Gem profil",
+    "#public-profile-form .profile-public-consent span": "Jeg giver lov til, at mit visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere.",
+    "#public-profile-form .profile-public-consent + .setting-hint": "Hvis du fjerner markeringen, skjules profilen, og den kan ikke findes i søgning eller pointtavle. Din e-mail vises aldrig offentligt.",
     ".footer > span:first-child": "En god gerning ad gangen.",
     ".footer > span:last-child": "Hverdagens app"
   },
@@ -134,11 +174,18 @@ const translations = {
     ".leaderboard-panel .panel-heading .eyebrow": "THE COMMUNITY",
     ".leaderboard-panel .panel-heading h2": "Everyday green heroes",
     ".leaderboard-head": "PLACE GREEN HERO DEEDS",
+    "#profile-search-form label": "Find a profile",
+    "#profile-search": "Search display names",
+    "#profile-search-results .setting-hint": "Enter at least two characters to search.",
+    "#public-profile-page .page-heading .eyebrow": "THE COMMUNITY",
+    "#back-to-leaderboard": "← Back to leaderboard",
+    "#public-profile-page .profile-panel .eyebrow": "PROFILE",
+    "#public-profile-page .profile-stats > .eyebrow": "GOOD DEEDS",
+    "#public-profile-score-label": "good deeds shared",
     "#profile-page .page-heading .eyebrow": "YOU ARE MAKING A DIFFERENCE",
     "#profile-page .page-heading h1": "My profile",
-    "#profile-page .page-heading .page-subtitle": "Your nickname and green deeds.",
-    ".profile-panel .eyebrow": "YOUR NICKNAME",
-    ".profile-panel .page-subtitle": "Part of the community for greener everyday living.",
+    "#profile-page .page-heading .page-subtitle": "Your public name and green deeds.",
+    "#profile-page .profile-panel .eyebrow": "PUBLIC NAME",
     ".profile-stats > .eyebrow": "YOUR CONTRIBUTION TO NATURE",
     ".profile-stats p:not(.eyebrow)": "good deeds shared",
     "#profile-signout": "Log out",
@@ -170,6 +217,30 @@ const translations = {
     "label[for='new-nickname']": "New nickname",
     "#new-nickname": "3–20 letters, numbers or _",
     "#nickname-submit": "Save nickname",
+    "#signup-details label[for='contact-email']": "Email address (private)",
+    "#signup-details label[for='display-name-mode']": "Name others can see",
+    "#display-name-mode option[value='nickname']": "My nickname",
+    "#display-name-mode option[value='real_name']": "My real name",
+    "#signup-real-name-field label": "Your real name",
+    "#terms-accepted + span": "I accept the terms.",
+    "#privacy-accepted + span": "I have read the privacy notice and understand that my selected display name, profile text, and deeds can be seen by other signed-in users if my profile is public.",
+    "#signup-terms-link": "Read the terms",
+    "#signup-privacy-link": "Read the privacy notice",
+    "#privacy-page-link": "Read about privacy and data",
+    "#signup-details .field-hint": "Your email is stored privately, is not verified, and is not used to sign in. It may be used for 2FA later.",
+    ".auth-footnote": "Your email is stored privately and is not used to sign in. Remember your passcode — it cannot be reset.",
+    "#public-profile-form h3": "Public profile",
+    "#public-profile-form .setting-hint": "Other signed-in users can see your chosen name, profile text, and deeds. Your email stays private and is not verified.",
+    "label[for='profile-display-name-mode']": "Name others can see",
+    "#profile-display-name-mode option[value='nickname']": "My nickname",
+    "#profile-display-name-mode option[value='real_name']": "My real name",
+    "label[for='profile-real-name']": "Your real name (private when nickname is shown)",
+    "label[for='profile-bio']": "Profile text (public)",
+    "#profile-bio": "Tell others a little about yourself",
+    "label[for='profile-email']": "Email address (private)",
+    "#public-profile-form button": "Save profile",
+    "#public-profile-form .profile-public-consent span": "I allow my display name, profile text, and deeds to be seen by other signed-in users.",
+    "#public-profile-form .profile-public-consent + .setting-hint": "When unchecked, your profile is hidden from search and the leaderboard. Your email is never public.",
     ".footer > span:first-child": "One good deed at a time.",
     ".footer > span:last-child": "Hverdagens app"
   }
@@ -197,6 +268,12 @@ function setAuthMode(signup) {
   confirmField.hidden = !signup;
   confirmPasscode.required = signup;
   passcodeInput.autocomplete = signup ? "new-password" : "current-password";
+  signupDetails.hidden = !signup;
+  contactEmailInput.required = signup;
+  displayNameModeInput.required = signup;
+  termsAcceptedInput.required = signup;
+  privacyAcceptedInput.required = signup;
+  updateSignupNameField();
   const english = languageSetting.value === "en";
   authSubmit.innerHTML = signup
     ? `${english ? "Create my profile" : "Opret min profil"} <span aria-hidden="true">→</span>`
@@ -205,35 +282,9 @@ function setAuthMode(signup) {
 
 function showSignedOut() {
   currentUser = undefined;
+  currentProfile = undefined;
   appShell.hidden = true;
   authScreen.hidden = false;
-}
-
-async function invokePrivacyFunction(action) {
-  const { data, error } = await supabase.functions.invoke("email-mfa", {
-    body: { action },
-    region: FunctionRegion.EuCentral1
-  });
-  if (error) {
-    if (error.context instanceof Response) {
-      let responseBody;
-      try {
-        responseBody = await error.context.clone().json();
-      } catch {
-        responseBody = undefined;
-      }
-      if (error.context.status === 404 || responseBody?.code === "NOT_FOUND") {
-        throw new Error("ACCOUNT_FUNCTION_NOT_DEPLOYED");
-      }
-      if (typeof responseBody?.error === "string") throw new Error(responseBody.error);
-    }
-    if (error.name === "FunctionsFetchError") {
-      throw new Error("ACCOUNT_FUNCTION_UNAVAILABLE");
-    }
-    throw error;
-  }
-  if (data?.error) throw new Error(data.error);
-  return data;
 }
 
 function routeSignedInSession(session, flow) {
@@ -268,16 +319,20 @@ function showSignedIn(user) {
 async function loadDashboard() {
   if (!currentUser) return;
   try {
-    const [leaderboardResult, activityResult] = await Promise.all([
+    const [leaderboardResult, activityResult, profileResult] = await Promise.all([
       supabase.rpc("get_leaderboard"),
       supabase.from("activities")
         .select("id, description, created_at")
         .eq("user_id", currentUser.id)
         .order("created_at", { ascending: false })
-        .limit(1000)
+        .limit(1000),
+      supabase.rpc("get_my_profile")
     ]);
     if (leaderboardResult.error) throw leaderboardResult.error;
     if (activityResult.error) throw activityResult.error;
+    if (profileResult.error) throw profileResult.error;
+    currentProfile = profileResult.data;
+    renderMyProfile(currentProfile);
     renderLeaderboard(leaderboardResult.data || []);
     renderActivities(activityResult.data || []);
   } catch (error) {
@@ -285,8 +340,30 @@ async function loadDashboard() {
   }
 }
 
+function renderMyProfile(profile) {
+  if (!profile) return;
+  const displayName = profile.display_name || profile.nickname;
+  for (const id of ["welcome-nickname", "topbar-nickname", "profile-nickname"]) {
+    document.getElementById(id).textContent = displayName;
+  }
+  for (const id of ["avatar-initial", "profile-avatar"]) {
+    document.getElementById(id).textContent = displayName.charAt(0).toUpperCase();
+  }
+  document.querySelector("#profile-display-name-mode").value = profile.display_name_mode;
+  document.querySelector("#profile-real-name").value = profile.real_name || "";
+  document.querySelector("#profile-bio").value = profile.bio || "";
+  document.querySelector("#profile-email").value = profile.email || "";
+  document.querySelector("#profile-public-enabled").checked = Boolean(profile.public_profile_enabled);
+  document.querySelector("#my-profile-bio").textContent = profile.bio || (
+    languageSetting.value === "en" ? "No profile text yet." : "Ingen profiltekst endnu."
+  );
+  updateProfileNameField();
+  document.querySelector("#profile-page .profile-panel .eyebrow").textContent =
+    languageSetting.value === "en" ? "PUBLIC NAME" : "OFFENTLIGT NAVN";
+}
+
 function renderLeaderboard(rows) {
-  const sorted = [...rows].sort((a, b) => b.points - a.points || a.nickname.localeCompare(b.nickname, "da"));
+  const sorted = [...rows].sort((a, b) => b.points - a.points || a.display_name.localeCompare(b.display_name, "da"));
   const rank = sorted.findIndex((row) => row.user_id === currentUser.id);
   const myRow = sorted[rank];
   const score = myRow ? Number(myRow.points) : 0;
@@ -310,9 +387,12 @@ function renderLeaderboard(rows) {
     identity.className = "leader-name";
     const avatar = document.createElement("span");
     avatar.className = "leader-avatar";
-    avatar.textContent = String(row.nickname).charAt(0).toUpperCase();
-    const name = document.createElement("span");
-    name.textContent = row.nickname;
+    avatar.textContent = String(row.display_name).charAt(0).toUpperCase();
+    const name = document.createElement("button");
+    name.className = "leader-profile-link";
+    name.type = "button";
+    name.textContent = row.display_name;
+    name.addEventListener("click", () => openPublicProfile(row.user_id));
     identity.append(avatar, name);
     const points = document.createElement("span");
     points.className = "leader-score";
@@ -322,6 +402,80 @@ function renderLeaderboard(rows) {
     item.append(position, identity, points);
     leaderboardList.append(item);
   });
+}
+
+async function openPublicProfile(userId) {
+  try {
+    const { data, error } = await supabase.rpc("get_public_profile", {
+      requested_user_id: userId
+    });
+    if (error) throw error;
+    if (!data) throw new Error(languageSetting.value === "en" ? "Profile not found." : "Profilen blev ikke fundet.");
+    document.querySelectorAll(".page").forEach((element) => { element.hidden = element.id !== "public-profile-page"; });
+    document.querySelector("#public-profile-name").textContent = data.display_name;
+    document.querySelector("#public-profile-avatar").textContent = data.display_name.charAt(0).toUpperCase();
+    document.querySelector("#public-profile-bio").textContent = data.bio || (
+      languageSetting.value === "en" ? "No profile text yet." : "Ingen profiltekst endnu."
+    );
+    document.querySelector("#public-profile-score").textContent = String(data.points);
+    const activities = document.querySelector("#public-profile-activities");
+    activities.replaceChildren();
+    if (!data.activities.length) {
+      activities.append(emptyState(languageSetting.value === "en" ? "No deeds shared yet." : "Ingen gerninger delt endnu."));
+    } else {
+      for (const activity of data.activities) {
+        const item = document.createElement("article");
+        item.className = "recent-item";
+        const copy = document.createElement("div");
+        copy.className = "activity-copy";
+        const description = document.createElement("div");
+        description.className = "activity-description";
+        description.textContent = activity.description;
+        const time = document.createElement("div");
+        time.className = "activity-time";
+        time.textContent = formatDate(activity.created_at);
+        copy.append(description, time);
+        item.append(copy);
+        activities.append(item);
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    displayError(error);
+  }
+}
+
+async function searchProfiles() {
+  const query = document.querySelector("#profile-search").value.trim();
+  const results = document.querySelector("#profile-search-results");
+  const flow = ++profileSearchFlow;
+  if (query.length < 2) {
+    const hint = emptyState(languageSetting.value === "en"
+      ? "Enter at least two characters to search."
+      : "Skriv mindst to tegn for at søge.");
+    results.replaceChildren(hint);
+    return;
+  }
+  try {
+    const { data, error } = await supabase.rpc("search_public_profiles", { search_text: query });
+    if (error) throw error;
+    if (flow !== profileSearchFlow) return;
+    results.replaceChildren();
+    if (!data?.length) {
+      results.append(emptyState(languageSetting.value === "en" ? "No profiles found." : "Ingen profiler fundet."));
+      return;
+    }
+    for (const profile of data) {
+      const button = document.createElement("button");
+      button.className = "profile-search-result";
+      button.type = "button";
+      button.textContent = `${profile.display_name} · ${profile.points}`;
+      button.addEventListener("click", () => openPublicProfile(profile.user_id));
+      results.append(button);
+    }
+  } catch (error) {
+    if (flow === profileSearchFlow) displayError(error);
+  }
 }
 
 function emptyState(text) {
@@ -423,10 +577,26 @@ authForm.addEventListener("submit", async (event) => {
   try {
     const email = `${normalizedNickname}@users.hverdagens.invalid`;
     if (isSignup) {
+      if (!termsAcceptedInput.checked || !privacyAcceptedInput.checked) {
+        throw new Error(languageSetting.value === "en"
+          ? "Accept the terms and privacy notice to create an account."
+          : "Accepter vilkårene og privatlivsinformationen for at oprette en konto.");
+      }
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { nickname } }
+        options: {
+          data: {
+            nickname,
+            contact_email: contactEmailInput.value.trim().toLowerCase(),
+            display_name_mode: displayNameModeInput.value,
+            real_name: realNameInput.value.trim(),
+            terms_accepted: termsAcceptedInput.checked,
+            privacy_accepted: privacyAcceptedInput.checked,
+            terms_version: "2026-10-23",
+            privacy_version: "2026-10-23"
+          }
+        }
       });
       if (error) throw error;
       if (!data.session) {
@@ -485,6 +655,34 @@ descriptionInput.addEventListener("input", () => {
 document.querySelectorAll("[data-page]").forEach((button) => {
   button.addEventListener("click", () => navigate(button.dataset.page));
 });
+document.querySelector("#back-to-leaderboard").addEventListener("click", () => navigate("leaderboard"));
+document.querySelector("#profile-search-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearTimeout(profileSearchTimer);
+  searchProfiles();
+});
+document.querySelector("#profile-search").addEventListener("input", () => {
+  clearTimeout(profileSearchTimer);
+  profileSearchTimer = setTimeout(searchProfiles, 250);
+});
+
+function updateSignupNameField() {
+  const needsRealName = displayNameModeInput.value === "real_name";
+  document.querySelector("#signup-real-name-field").hidden = !needsRealName;
+  realNameInput.required = isSignup && needsRealName;
+}
+
+function updateProfileNameField() {
+  const mode = document.querySelector("#profile-display-name-mode").value;
+  const nameInput = document.querySelector("#profile-real-name");
+  nameInput.required = mode === "real_name";
+  nameInput.placeholder = mode === "real_name"
+    ? (languageSetting.value === "en" ? "Your public name" : "Dit offentlige navn")
+    : "";
+}
+
+displayNameModeInput.addEventListener("change", updateSignupNameField);
+document.querySelector("#profile-display-name-mode").addEventListener("change", updateProfileNameField);
 
 async function signOut() {
   const { error } = await supabase.auth.signOut();
@@ -499,7 +697,9 @@ document.querySelector("#export-data").addEventListener("click", async (event) =
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    const exported = await invokePrivacyFunction("export-data");
+    const { data: exported, error } = await supabase.rpc("export_my_data");
+    if (error) throw error;
+    if (!exported) throw new Error(languageSetting.value === "en" ? "Your data could not be exported." : "Dine data kunne ikke eksporteres.");
     const blob = new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" });
     const downloadUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -509,13 +709,7 @@ document.querySelector("#export-data").addEventListener("click", async (event) =
     URL.revokeObjectURL(downloadUrl);
     showNotice(languageSetting.value === "en" ? "Your data export has been downloaded." : "Dine data er hentet.");
   } catch (error) {
-    if (error.message === "ACCOUNT_FUNCTION_UNAVAILABLE" || error.message === "ACCOUNT_FUNCTION_NOT_DEPLOYED") {
-      showNotice(languageSetting.value === "en"
-        ? "Data export is available after the secure server function is set up."
-        : "Dataeksport bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
-    } else {
-      displayError(error);
-    }
+    displayError(error);
   } finally {
     button.disabled = false;
   }
@@ -530,18 +724,13 @@ document.querySelector("#delete-account").addEventListener("click", async (event
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    await invokePrivacyFunction("delete-account");
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) throw error;
     await supabase.auth.signOut({ scope: "local" });
     showSignedOut();
     showNotice(languageSetting.value === "en" ? "Your account and app data have been deleted." : "Din konto og dine appdata er slettet.");
   } catch (error) {
-    if (error.message === "ACCOUNT_FUNCTION_UNAVAILABLE" || error.message === "ACCOUNT_FUNCTION_NOT_DEPLOYED") {
-      showNotice(languageSetting.value === "en"
-        ? "Account deletion is available after the secure server function is set up."
-        : "Kontosletning bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
-    } else {
-      displayError(error);
-    }
+    displayError(error);
   } finally {
     button.disabled = false;
   }
@@ -582,7 +771,7 @@ function applyPreferences() {
   authIntro.textContent = english
     ? "Write down today's green deeds and inspire each other."
     : "Skriv dagens grønne gerninger ned, og inspirér hinanden til flere.";
-  document.querySelector(".privacy-link").textContent = english
+  document.querySelector("#privacy-page-link").textContent = english
     ? "Read about privacy and data"
     : "Læs om privatliv og data";
   document.querySelector("#auth-form label[for='nickname']").textContent = english ? "Nickname" : "Kaldenavn";
@@ -595,8 +784,13 @@ function applyPreferences() {
     ? `${english ? "Create my profile" : "Opret min profil"} <span aria-hidden="true">→</span>`
     : `${english ? "Log in" : "Log ind"} <span aria-hidden="true">→</span>`;
   document.querySelector(".auth-footnote").textContent = english
-    ? "No email needed. Remember your personal passcode — it cannot be reset."
-    : "Ingen e-mail nødvendig. Husk din personlige kode — den kan ikke nulstilles.";
+    ? "Your email is stored privately and is not used to sign in. Remember your passcode — it cannot be reset."
+    : "E-mailen gemmes privat og bruges ikke til login. Husk din personlige kode — den kan ikke nulstilles.";
+  if (currentProfile) {
+    document.querySelector("#my-profile-bio").textContent = currentProfile.bio || (
+      english ? "No profile text yet." : "Ingen profiltekst endnu."
+    );
+  }
   updateNicknameAvailability(Number(document.querySelector("#profile-score").textContent));
   if (currentUser) loadDashboard();
 }
@@ -677,6 +871,29 @@ document.querySelector("#nickname-form").addEventListener("submit", async (event
   } finally {
     submit.disabled = false;
     applyPreferences();
+  }
+});
+
+document.querySelector("#public-profile-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    const { error } = await supabase.rpc("update_my_public_profile", {
+      requested_display_name_mode: document.querySelector("#profile-display-name-mode").value,
+      requested_real_name: document.querySelector("#profile-real-name").value.trim(),
+      requested_bio: document.querySelector("#profile-bio").value.trim(),
+      requested_email: document.querySelector("#profile-email").value.trim(),
+      requested_public_profile_enabled: document.querySelector("#profile-public-enabled").checked
+    });
+    if (error) throw error;
+    showNotice(languageSetting.value === "en" ? "Your profile has been updated." : "Din profil er opdateret.");
+    await loadDashboard();
+  } catch (error) {
+    displayError(error);
+  } finally {
+    submit.disabled = false;
   }
 });
 

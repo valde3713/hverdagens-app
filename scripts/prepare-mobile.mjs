@@ -11,6 +11,7 @@ const webFiles = [
   "leaf.svg",
   "privacy.html",
   "styles.css",
+  "terms.html",
 ];
 
 await mkdir(path.join(webOutput, "vendor"), { recursive: true });
