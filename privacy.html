@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7ef">
+    <meta name="description" content="Information om privatliv og persondata i Hverdagens app.">
+    <title>Privatliv — Hverdagens app</title>
+    <link rel="icon" href="./leaf.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body class="privacy-page">
+    <main class="privacy-card">
+      <a class="brand" href="./">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M25.7 5.2C16 5 8.3 8.9 8.3 16c0 4.1 2.9 6.5 6.8 6.5 7 0 10.7-8.2 10.6-17.3ZM7 27c2.5-6.2 7.1-11 13.1-14.8" /></svg>
+        </span>
+        <span>hverdagens<span class="brand-light">app</span></span>
+      </a>
+      <p class="eyebrow">DINE OPLYSNINGER</p>
+      <h1>Privatliv og persondata</h1>
+      <p class="privacy-updated">Sidst opdateret: 23. oktober 2026</p>
+      <div class="privacy-notice">
+        <strong>Testversion:</strong> Brug kun et kaldenavn. Skriv ikke følsomme eller private oplysninger i dine gerninger.
+        Før appen åbnes for flere brugere, skal ejeren tilføje en privat kontaktadresse her og kontrollere leverandørernes databehandleraftaler.
+      </div>
+
+      <h2>Hvilke oplysninger bruger appen?</h2>
+      <ul>
+        <li>Dit kaldenavn, en intern kontoidentifikator og kontoens oprettelsesdato.</li>
+        <li>Teksten i dine gode gerninger og tidspunktet, de blev delt. Beskrivelserne vises kun på din egen konto.</li>
+        <li>Kaldenavn og antal gerninger vises på pointtavlen for andre indloggede brugere.</li>
+        <li>Hvis du frivilligt slår e-mail-tofaktor til: din e-mailadresse, en kortlivet engangskode og oplysninger om bekræftede login-sessioner.</li>
+        <li>Din personlige kode håndteres af Supabase Auth og vises eller gemmes ikke som læsbar tekst i appen.</li>
+      </ul>
+
+      <h2>Hvorfor og hvor behandles oplysningerne?</h2>
+      <p>Oplysningerne bruges til at oprette og sikre konti, gemme gerninger og vise pointtavlen. Appens database og autentificering er hos Supabase i projektets valgte EU-region. MFA-serverfunktionen er konfigureret til at køre i Frankfurt (eu-central-1). GitHub Pages leverer appens offentlige filer. Hvis e-mail-tofaktor aktiveres, sendes din e-mail og engangskode via Resend; ejeren skal kontrollere Resends databehandleraftale og region før brug.</p>
+      <p>GitHub, Supabase og Resend kan behandle tekniske forbindelsesoplysninger, fx IP-adresse, i forbindelse med drift og sikkerhed. Supabase-klientbiblioteket ligger lokalt sammen med appen; browseren sender ikke loginoplysninger til en ekstern kode-CDN. Appen bruger ikke annoncerings- eller analyseværktøjer. Backups, driftslogs og underleverandører kan have andre opbevarings- eller overførselsvilkår. Serveringsregion alene garanterer ikke overholdelse af GDPR; leverandørvilkår og overførsler skal også kontrolleres.</p>
+
+      <h2>Hvor længe gemmes oplysningerne?</h2>
+      <p>Profil og gerninger gemmes, indtil du sletter dem eller sletter kontoen. E-mail-tofaktor er valgfrit og kan knyttes til kontoen, indtil kontoen slettes. Engangskoder udløber efter 10 minutter; kodeposter ældre end 24 timer og udløbne sessionsposter ryddes, når MFA-funktionen bruges. Leverandører kan have særskilte, begrænsede drifts- og sikkerhedslogs efter deres egne vilkår.</p>
+
+      <h2>Dine valg og rettigheder</h2>
+      <p>Under <strong>Min profil → Indstillinger → Dine data</strong> kan du hente en kopi af appens kontodata eller slette din konto. Sletning fjerner profilen, gerningerne og MFA-indstillingerne fra appens database. Din lokale indstilling for tema og sprog gemmes kun i browseren.</p>
+      <p>Du kan efter GDPR have ret til indsigt, berigtigelse, sletning, begrænsning, dataportabilitet og at klage til Datatilsynet. Kontaktoplysninger på den dataansvarlige skal offentliggøres her, før appen bruges bredt. Denne side er praktisk information, ikke juridisk rådgivning eller en garanti for, at alle juridiske krav er opfyldt.</p>
+
+      <a class="button button-primary privacy-back" href="./">Tilbage til Hverdagens app <span aria-hidden="true">→</span></a>
+    </main>
+  </body>
+</html>

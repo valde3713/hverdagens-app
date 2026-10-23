@@ -43,6 +43,7 @@
         </form>
         <p class="auth-footnote">Ingen e-mail nødvendig. Husk din personlige kode — den kan ikke nulstilles.</p>
         <p id="setup-message" class="setup-message" hidden>Supabase er ikke sat op endnu. Følg trinene i README.md, og indsæt projektets URL og offentlige nøgle i config.js.</p>
+        <a class="privacy-link" href="./privacy.html">Læs om privatliv og data</a>
       </section>
       <div class="auth-art" aria-hidden="true">
         <span class="sun"></span>
@@ -145,6 +146,7 @@
                 <form id="activity-form">
                   <label for="activity-description">Hvad gjorde du?</label>
                   <textarea id="activity-description" name="description" maxlength="240" rows="3" placeholder="Fx Jeg cyklede på arbejde i stedet for at tage bilen…" required></textarea>
+                  <p class="privacy-reminder">Skriv ikke private eller følsomme oplysninger.</p>
                   <div class="form-bottom">
                     <span class="character-count" id="character-count">0 / 240</span>
                     <button class="button button-primary" type="submit">Del min gerning <span aria-hidden="true">→</span></button>
@@ -261,6 +263,16 @@
                 <button id="nickname-submit" class="button button-secondary" type="submit" disabled>Gem kaldenavn</button>
               </form>
             </section>
+            <section class="panel data-rights-panel">
+              <p class="eyebrow">DINE DATA</p>
+              <h2>Privatliv og konto</h2>
+              <p class="setting-hint">Du kan hente en kopi af dine profildata og gerninger eller slette din konto og dens data.</p>
+              <a class="privacy-link" href="./privacy.html">Læs privatlivsinformation</a>
+              <div class="data-rights-actions">
+                <button id="export-data" class="button button-secondary" type="button">Hent mine data</button>
+                <button id="delete-account" class="button button-danger" type="button">Slet min konto</button>
+              </div>
+            </section>
           </section>
         </main>
         <footer class="footer"><span>En god gerning ad gangen.</span><span>Hverdagens app <span aria-hidden="true">✳</span></span></footer>
@@ -268,6 +280,7 @@
     </div>
 
     <script src="./config.js"></script>
+    <script src="./vendor/supabase.js"></script>
     <script type="module" src="./app.js"></script>
   </body>
 </html>

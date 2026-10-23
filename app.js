@@ -1,6 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const config = window.APP_CONFIG;
+const { createClient, FunctionRegion } = window.supabase;
 const authScreen = document.querySelector("#auth-screen");
 const mfaScreen = document.querySelector("#mfa-screen");
 const appShell = document.querySelector("#app-shell");
@@ -51,6 +50,7 @@ const translations = {
     ".entry-panel .panel-heading h2": "Tilføj en god gerning",
     ".entry-panel label": "Hvad gjorde du?",
     "#activity-description": "Fx Jeg cyklede på arbejde i stedet for at tage bilen…",
+    ".privacy-reminder": "Skriv ikke private eller følsomme oplysninger.",
     ".entry-panel .form-bottom .button": "Del min gerning",
     ".score-panel > .eyebrow": "DIT BIDRAG",
     ".score-label": "gode gerninger i alt",
@@ -93,6 +93,12 @@ const translations = {
     "#mfa-login-form button": "Bekræft kode",
     "#mfa-resend": "Send en ny kode",
     "#mfa-cancel": "Log ud",
+    ".data-rights-panel > .eyebrow": "DINE DATA",
+    ".data-rights-panel h2": "Privatliv og konto",
+    ".data-rights-panel .setting-hint": "Du kan hente en kopi af dine profildata og gerninger eller slette din konto og dens data.",
+    ".data-rights-panel .privacy-link": "Læs privatlivsinformation",
+    "#export-data": "Hent mine data",
+    "#delete-account": "Slet min konto",
     ".setting-control label[for='theme-setting']": "Tema",
     ".setting-control label[for='language-setting']": "Sprog",
     "#theme-setting option[value='light']": "Lyst",
@@ -133,6 +139,7 @@ const translations = {
     ".entry-panel .panel-heading h2": "Add a good deed",
     ".entry-panel label": "What did you do?",
     "#activity-description": "E.g. I cycled to work instead of driving…",
+    ".privacy-reminder": "Do not include private or sensitive information.",
     ".entry-panel .form-bottom .button": "Share my deed",
     ".score-panel > .eyebrow": "YOUR CONTRIBUTION",
     ".score-label": "good deeds in total",
@@ -175,6 +182,12 @@ const translations = {
     "#mfa-login-form button": "Verify code",
     "#mfa-resend": "Send a new code",
     "#mfa-cancel": "Log out",
+    ".data-rights-panel > .eyebrow": "YOUR DATA",
+    ".data-rights-panel h2": "Privacy and account",
+    ".data-rights-panel .setting-hint": "Download a copy of your profile and deeds, or delete your account and its data.",
+    ".data-rights-panel .privacy-link": "Read the privacy notice",
+    "#export-data": "Download my data",
+    "#delete-account": "Delete my account",
     ".setting-control label[for='theme-setting']": "Theme",
     ".setting-control label[for='language-setting']": "Language",
     "#theme-setting option[value='light']": "Light",
@@ -233,7 +246,8 @@ function showSignedOut() {
 
 async function invokeMfa(action, values = {}) {
   const { data, error } = await supabase.functions.invoke("email-mfa", {
-    body: { action, ...values }
+    body: { action, ...values },
+    region: FunctionRegion.EuCentral1
   });
   if (error) {
     if (error.context instanceof Response) {
@@ -247,6 +261,9 @@ async function invokeMfa(action, values = {}) {
         throw new Error("MFA_FUNCTION_NOT_DEPLOYED");
       }
       if (typeof responseBody?.error === "string") throw new Error(responseBody.error);
+    }
+    if (error.name === "FunctionsFetchError") {
+      throw new Error("MFA_FUNCTION_UNAVAILABLE");
     }
     throw error;
   }
@@ -265,7 +282,7 @@ async function routeSignedInSession(session, flow) {
   } catch (error) {
     if (flow !== authFlow) return;
     showSignedIn(session.user);
-    if (error.message !== "MFA_FUNCTION_NOT_DEPLOYED") displayError(error);
+    if (!["MFA_FUNCTION_NOT_DEPLOYED", "MFA_FUNCTION_UNAVAILABLE"].includes(error.message)) displayError(error);
     return;
   }
   if (flow !== authFlow) return;
@@ -560,10 +577,10 @@ async function loadMfaSettings() {
     mfaEnrollVerifyForm.hidden = true;
     document.querySelector("#mfa-email").disabled = false;
   } catch (error) {
-    if (error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+    if (["MFA_FUNCTION_NOT_DEPLOYED", "MFA_FUNCTION_UNAVAILABLE"].includes(error.message)) {
       document.querySelector("#mfa-settings-status").textContent = languageSetting.value === "en"
-        ? "Email two-factor is not set up on the server yet. Theme, language, and passcode settings are available."
-        : "E-mail-tofaktor er ikke sat op på serveren endnu. Tema, sprog og kodeskift virker stadig.";
+        ? "The email verification service is not available yet. Theme, language, and passcode settings are available."
+        : "E-mailbekræftelse er ikke tilgængelig endnu. Tema, sprog og kodeskift virker stadig.";
       mfaEnrollForm.hidden = true;
       mfaEnrollVerifyForm.hidden = true;
     } else {
@@ -587,7 +604,13 @@ mfaEnrollForm.addEventListener("submit", async (event) => {
       : "Tjek din indbakke, og indtast den sekscifrede kode.";
     showNotice(languageSetting.value === "en" ? "Verification code sent." : "Bekræftelseskode sendt.");
   } catch (error) {
-    displayError(error);
+    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+      showNotice(languageSetting.value === "en"
+        ? "Email verification is not available yet because the secure server function is not deployed."
+        : "E-mailbekræftelse er ikke tilgængelig endnu, fordi den sikre serverfunktion ikke er installeret.", true);
+    } else {
+      displayError(error);
+    }
   } finally {
     button.disabled = false;
   }
@@ -607,7 +630,13 @@ mfaEnrollVerifyForm.addEventListener("submit", async (event) => {
       : "Tofaktorbekræftelse via e-mail er slået til.");
     await loadMfaSettings();
   } catch (error) {
-    displayError(error);
+    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+      showNotice(languageSetting.value === "en"
+        ? "Email verification is not available yet because the secure server function is not deployed."
+        : "E-mailbekræftelse er ikke tilgængelig endnu, fordi den sikre serverfunktion ikke er installeret.", true);
+    } else {
+      displayError(error);
+    }
   } finally {
     button.disabled = false;
   }
@@ -641,6 +670,58 @@ document.querySelector("#mfa-resend").addEventListener("click", async (event) =>
     displayError(error);
   } finally {
     event.currentTarget.disabled = false;
+  }
+});
+
+document.querySelector("#export-data").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const exported = await invokeMfa("export-data");
+    const blob = new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `hverdagens-app-data-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+    showNotice(languageSetting.value === "en" ? "Your data export has been downloaded." : "Dine data er hentet.");
+  } catch (error) {
+    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+      showNotice(languageSetting.value === "en"
+        ? "Data export is available after the secure server function is set up."
+        : "Dataeksport bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
+    } else {
+      displayError(error);
+    }
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#delete-account").addEventListener("click", async (event) => {
+  const confirmation = languageSetting.value === "en"
+    ? window.prompt("This permanently deletes your profile, deeds, and MFA settings. Type DELETE to continue.")
+    : window.prompt("Dette sletter din profil, dine gerninger og MFA-indstillinger permanent. Skriv SLET for at fortsætte.");
+  if (confirmation !== (languageSetting.value === "en" ? "DELETE" : "SLET")) return;
+
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    await invokeMfa("delete-account");
+    await supabase.auth.signOut({ scope: "local" });
+    showSignedOut();
+    showNotice(languageSetting.value === "en" ? "Your account and app data have been deleted." : "Din konto og dine appdata er slettet.");
+  } catch (error) {
+    if (error.message === "MFA_FUNCTION_UNAVAILABLE" || error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+      showNotice(languageSetting.value === "en"
+        ? "Account deletion is available after the secure server function is set up."
+        : "Kontosletning bliver tilgængelig, når den sikre serverfunktion er sat op.", true);
+    } else {
+      displayError(error);
+    }
+  } finally {
+    button.disabled = false;
   }
 });
 
@@ -679,6 +760,9 @@ function applyPreferences() {
   authIntro.textContent = english
     ? "Write down today's green deeds and inspire each other."
     : "Skriv dagens grønne gerninger ned, og inspirér hinanden til flere.";
+  document.querySelector(".privacy-link").textContent = english
+    ? "Read about privacy and data"
+    : "Læs om privatliv og data";
   document.querySelector("#mfa-screen .eyebrow").textContent = english ? "EXTRA PROTECTION" : "EKSTRA BESKYTTELSE";
   document.querySelector("#mfa-title").textContent = english ? "Check your email" : "Tjek din e-mail";
   document.querySelector("#mfa-login-code").placeholder = english ? "6 digits" : "6 cifre";

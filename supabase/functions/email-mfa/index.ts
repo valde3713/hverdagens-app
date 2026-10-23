@@ -12,7 +12,7 @@ const verifiedSessionLifetimeMs = 8 * 60 * 60 * 1000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": appOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-region",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
 };
@@ -50,7 +50,9 @@ function validateEmail(value: unknown): string {
 
 function generateCode(): string {
   const values = new Uint32Array(1);
-  crypto.getRandomValues(values);
+  do {
+    crypto.getRandomValues(values);
+  } while (values[0] >= 4_294_000_000);
   return String(values[0] % 1_000_000).padStart(6, "0");
 }
 
@@ -103,7 +105,7 @@ async function sendCode(email: string, code: string, purpose: Purpose) {
     }),
   });
   if (!response.ok) {
-    console.error("Email delivery failed", response.status, await response.text());
+    console.error("Email delivery failed", response.status);
     throw new Error("E-mailen kunne ikke sendes. Kontrollér e-mailopsætningen, og prøv igen.");
   }
 }
@@ -139,10 +141,31 @@ async function recordVerifiedSession(userId: string, sessionId: string) {
   if (error) throw error;
 }
 
+async function requireVerifiedSession(userId: string, sessionId: string) {
+  const { data: settings, error } = await service.from("email_mfa_settings")
+    .select("enabled")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!settings?.enabled) return;
+
+  const { data: verified, error: sessionError } = await service.from("email_mfa_sessions")
+    .select("session_id")
+    .eq("user_id", userId)
+    .eq("session_id", sessionId)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  if (sessionError) throw sessionError;
+  if (!verified) throw new Error("Bekræft e-mailkoden, før du fortsætter.");
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return respond({ error: "Method not allowed." }, 405);
   if (request.headers.get("origin") !== appOrigin) return respond({ error: "Origin not allowed." }, 403);
+  if (Deno.env.get("SB_REGION") !== "eu-central-1") {
+    return respond({ error: "E-mailbekræftelse er kun konfigureret til behandling i EU." }, 503);
+  }
 
   try {
     const authorization = request.headers.get("authorization");
@@ -160,11 +183,13 @@ Deno.serve(async (request) => {
     const db = service;
 
     if (action === "status") {
-      const { error: cleanupError } = await db.from("email_mfa_sessions")
-        .delete()
-        .eq("user_id", user.id)
-        .lt("expires_at", new Date().toISOString());
-      if (cleanupError) throw cleanupError;
+      const now = new Date().toISOString();
+      const [sessionCleanup, challengeCleanup] = await Promise.all([
+        db.from("email_mfa_sessions").delete().lt("expires_at", now),
+        db.from("email_mfa_challenges").delete().lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      ]);
+      if (sessionCleanup.error) throw sessionCleanup.error;
+      if (challengeCleanup.error) throw challengeCleanup.error;
       const { data: settings, error } = await db.from("email_mfa_settings")
         .select("email, enabled")
         .eq("user_id", user.id)
@@ -181,7 +206,52 @@ Deno.serve(async (request) => {
       return respond({ enabled: true, verified: Boolean(verified), emailHint: maskEmail(settings.email) });
     }
 
+    if (action === "export-data") {
+      await requireVerifiedSession(user.id, sessionId);
+      const [profileResult, settingsResult] = await Promise.all([
+        service.from("profiles").select("id, nickname, created_at").eq("id", user.id).single(),
+        db.from("email_mfa_settings").select("email, enabled, created_at").eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (profileResult.error) throw profileResult.error;
+      if (settingsResult.error) throw settingsResult.error;
+      const activities = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await service.from("activities")
+          .select("id, description, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + 999);
+        if (error) throw error;
+        activities.push(...data);
+        if (data.length < 1000) break;
+      }
+      return respond({
+        exported_at: new Date().toISOString(),
+        account: {
+          id: user.id,
+          created_at: user.created_at,
+          nickname: profileResult.data.nickname,
+        },
+        activities,
+        email_mfa: settingsResult.data
+          ? {
+            email: settingsResult.data.email,
+            enabled: settingsResult.data.enabled,
+            created_at: settingsResult.data.created_at,
+          }
+          : null,
+      });
+    }
+
+    if (action === "delete-account") {
+      await requireVerifiedSession(user.id, sessionId);
+      const { error } = await service.auth.admin.deleteUser(user.id);
+      if (error) throw error;
+      return respond({ deleted: true });
+    }
+
     if (action === "start-enrollment") {
+      await requireVerifiedSession(user.id, sessionId);
       const email = validateEmail(body.email);
       await createChallenge(user.id, "enroll", email);
       return respond({ sent: true });
@@ -218,20 +288,21 @@ Deno.serve(async (request) => {
       if (challenge.attempts >= 5) {
         return respond({ error: "For mange forsøg. Bed om en ny kode." }, 429);
       }
-          const { data: attempt, error: attemptError } = await db.from("email_mfa_challenges")
+      const { data: attempt, error: attemptError } = await db.from("email_mfa_challenges")
         .update({ attempts: challenge.attempts + 1 })
         .eq("id", challenge.id)
-            .eq("attempts", challenge.attempts)
-            .select("attempts")
-            .maybeSingle();
+        .eq("attempts", challenge.attempts)
+        .select("attempts")
+        .maybeSingle();
       if (attemptError) throw attemptError;
-          if (!attempt) return respond({ error: "Koden er allerede brugt eller udløbet. Bed om en ny kode." }, 429);
+      if (!attempt) return respond({ error: "Koden er allerede brugt eller udløbet. Bed om en ny kode." }, 429);
       const submittedHash = await hashCode(user.id, purpose, body.code);
       if (!safeEqual(submittedHash, challenge.code_hash)) {
         return respond({ error: "Koden passer ikke. Prøv igen." }, 400);
       }
 
       if (purpose === "enroll") {
+        await requireVerifiedSession(user.id, sessionId);
         const { error: saveError } = await db.from("email_mfa_settings").upsert({
           user_id: user.id,
           email: challenge.email,
