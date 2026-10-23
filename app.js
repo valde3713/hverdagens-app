@@ -39,6 +39,7 @@ const translations = {
     ".sidebar-note p": "Små skridt tæller.",
     ".sidebar-note strong": "Bliv ved med at gøre en forskel.",
     "#signout-button span": "Log ud",
+    ".topbar-settings": "Indstillinger",
     "#home-page .welcome-row .eyebrow": "DIN GRØNNE HVERDAG",
     "#home-page .welcome-row h1": "Hej, ",
     "#home-page .welcome-row .page-subtitle": "Hver lille handling gør en forskel.",
@@ -119,6 +120,7 @@ const translations = {
     ".sidebar-note p": "Small steps matter.",
     ".sidebar-note strong": "Keep making a difference.",
     "#signout-button span": "Log out",
+    ".topbar-settings": "Settings",
     ".user-chevron": "⌄",
     "#home-page .welcome-row .eyebrow": "YOUR GREEN EVERYDAY",
     "#home-page .welcome-row h1": "Hi, ",
@@ -235,7 +237,15 @@ async function invokeMfa(action, values = {}) {
   });
   if (error) {
     if (error.context instanceof Response) {
-      const responseBody = await error.context.clone().json();
+      let responseBody;
+      try {
+        responseBody = await error.context.clone().json();
+      } catch {
+        responseBody = undefined;
+      }
+      if (error.context.status === 404 || responseBody?.code === "NOT_FOUND") {
+        throw new Error("MFA_FUNCTION_NOT_DEPLOYED");
+      }
       if (typeof responseBody?.error === "string") throw new Error(responseBody.error);
     }
     throw error;
@@ -255,7 +265,7 @@ async function routeSignedInSession(session, flow) {
   } catch (error) {
     if (flow !== authFlow) return;
     showSignedIn(session.user);
-    displayError(error);
+    if (error.message !== "MFA_FUNCTION_NOT_DEPLOYED") displayError(error);
     return;
   }
   if (flow !== authFlow) return;
@@ -550,7 +560,15 @@ async function loadMfaSettings() {
     mfaEnrollVerifyForm.hidden = true;
     document.querySelector("#mfa-email").disabled = false;
   } catch (error) {
-    displayError(error);
+    if (error.message === "MFA_FUNCTION_NOT_DEPLOYED") {
+      document.querySelector("#mfa-settings-status").textContent = languageSetting.value === "en"
+        ? "Email two-factor is not set up on the server yet. Theme, language, and passcode settings are available."
+        : "E-mail-tofaktor er ikke sat op på serveren endnu. Tema, sprog og kodeskift virker stadig.";
+      mfaEnrollForm.hidden = true;
+      mfaEnrollVerifyForm.hidden = true;
+    } else {
+      displayError(error);
+    }
   }
 }
 
@@ -648,6 +666,8 @@ function applyPreferences() {
       }));
     } else if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
       element.placeholder = text;
+    } else if (selector === ".topbar-settings") {
+      element.querySelector("span").textContent = text;
     } else {
       const textNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
       if (textNode) textNode.textContent = element.children.length ? `${text} ` : text;

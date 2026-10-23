@@ -79,6 +79,9 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 .main-column { min-height: 100vh; margin-left: 238px; }
 .topbar { position: sticky; top: 0; z-index: 1; display: flex; height: 70px; align-items: center; justify-content: space-between; padding: 0 5.5%; border-bottom: 1px solid #e8ece3; background: #ffffffed; backdrop-filter: blur(12px); }
 .topbar-date { color: #849084; font-size: 11px; }
+.topbar-actions { display: flex; align-items: center; gap: 13px; }
+.topbar-settings { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid #e8ece3; border-radius: 9px; background: #fff; color: #526254; cursor: pointer; font-size: 11px; font-weight: 600; }
+.topbar-settings:hover { background: #f3f6ee; }
 .user-chip { display: flex; align-items: center; gap: 9px; padding: 4px 8px 4px 4px; border: 0; border-radius: 9px; background: transparent; color: #526254; cursor: pointer; font-size: 11px; font-weight: 600; }
 .avatar { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; background: #e3eddd; color: var(--green); font-size: 12px; font-weight: 700; }
 .user-chevron { margin-left: 3px; color: #96a094; }
@@ -188,6 +191,8 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 :root[data-theme="dark"] .recent-item, :root[data-theme="dark"] .leaderboard-row, :root[data-theme="dark"] .settings-form { border-color: #354438; }
 :root[data-theme="dark"] .footer { border-color: #354438; color: #94a395; }
 :root[data-theme="dark"] .user-chip { color: #c8d7c7; }
+:root[data-theme="dark"] .topbar-settings { background: #202d24; border-color: #354438; color: #c8d7c7; }
+:root[data-theme="dark"] .topbar-settings:hover { background: #293a2e; }
 :root[data-theme="dark"] .activity-delete { background: #293a2e; border-color: #624640; color: #e7a89a; }
 :root[data-theme="dark"] .empty-state, :root[data-theme="dark"] .auth-footnote { color: #aebcaf; }
 :root[data-theme="dark"] .streak-badge { background: #202d24; border-color: #354438; color: #c8d7c7; }
@@ -218,6 +223,8 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
   .nav-item span { width: auto; font-size: 17px; }
   .main-column { margin-left: 0; padding-bottom: 64px; }
   .topbar { height: 59px; padding-inline: 18px; }
+  .topbar-settings { width: 34px; height: 34px; justify-content: center; padding: 0; font-size: 15px; }
+  .topbar-settings span { display: none; }
   .page-content { min-height: calc(100vh - 120px); padding: 29px 18px 36px; }
   .welcome-row { align-items: flex-start; }
   .page h1 { font-size: 27px; }
