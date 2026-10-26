@@ -1,4 +1,4 @@
-name: Byg iOS App
+  name: Byg iOS App
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       - name: Installer Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Installer afhængigheder
         run: npm install
