@@ -1,0 +1,24 @@
+name: Byg iOS App
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v3
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Installer afhængigheder
+        run: npm install
+
+      - name: Synkroniser med Capacitor
+        run: npx cap sync ios
