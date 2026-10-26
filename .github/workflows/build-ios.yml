@@ -20,5 +20,8 @@ jobs:
       - name: Installer afhængigheder
         run: npm install
 
+      - name: Byg web-assets (generer webdir)
+        run: npm run build
+
       - name: Synkroniser med Capacitor
         run: npx cap sync ios
