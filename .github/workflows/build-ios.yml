@@ -1,4 +1,4 @@
-  name: Byg iOS App
+ name: Byg iOS App
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - name: Hent koden
         uses: actions/checkout@v3
 
-      - name: Installer Node.js
+      - name: Installer Node.js (Version 22)
         uses: actions/setup-node@v3
         with:
           node-version: '22'
