@@ -20,11 +20,11 @@ jobs:
       - name: Installer afhængigheder
         run: npm install
 
-      - name: Byg web-applikationen (generer web-filer)
-        run: npm run build
+      - name: Vis tilgængelige npm scripts
+        run: npm run
 
-      - name: Synkroniser med Capacitor
-        run: npx cap sync ios
+      - name: Forbered og synkroniser med Capacitor
+        run: npm run mobile:sync
 
       - name: Find og Byg iOS-projekt automatisk
         run: |
@@ -62,5 +62,3 @@ jobs:
         with:
           name: ios-app-simulator
           path: '**/App.zip'
-
-
