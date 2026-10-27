@@ -23,6 +23,11 @@ jobs:
       - name: Forbered og synkroniser med Capacitor
         run: npm run mobile:sync
 
+      - name: Tjek om mappen findes
+        run: |
+          echo "Indhold af ios/App mappen:"
+          ls -la ios/App || echo "ios/App findes ikke!"
+
       - name: Byg iOS-projekt (Simulator)
         working-directory: ios/App
         run: |
@@ -31,16 +36,12 @@ jobs:
       - name: Find og pak appen
         working-directory: ios/App
         run: |
-          echo "Vis indholdet af produkter:"
-          find Build -name "*.app"
-          
           APP_PATH=$(find Build -name "App.app" -type d | head -n 1)
           echo "Fandt app på: $APP_PATH"
-          
           zip -r App.zip "$APP_PATH"
 
       - name: Upload app som Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-simulator
-          path: ios/App/ios/App/App.zip
+          path: ios/App/ios/App.zip
