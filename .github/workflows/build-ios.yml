@@ -44,7 +44,9 @@ jobs:
           cd "$PARENT_DIR"
           zip -r App.zip App.app
           
-          mv App.zip ../../App.zip
+          # Flyt zip-filen helt ud til roden af repositoriet
+          pwd
+          mv App.zip ../../../App.zip
 
       - name: Upload app som Artifact
         uses: actions/upload-artifact@v4
