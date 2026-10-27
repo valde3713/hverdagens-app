@@ -20,10 +20,7 @@ jobs:
       - name: Installer afhængigheder
         run: npm install
 
-      - name: Vis tilgængelige npm scripts
-        run: npm run
-
-      - name: Forbered og synkroniser med Capacitor
+      - name: Forbered og synkroniser med Capacitor (via dit eget script)
         run: npm run mobile:sync
 
       - name: Find og Byg iOS-projekt automatisk
