@@ -28,32 +28,14 @@ jobs:
           npx cap add ios || true
           npx cap sync ios
 
-      - name: Fejlfinding - Vis alt i ios mappen rekursivt
+      - name: Byg iOS-projekt (Simulator)
         run: |
-          echo "=== Lister hele indholdet af ios-mappen ==="
-          find ios -maxdepth 3
-
-      - name: Find workspace og byg appen automatisk
-        run: |
-          WORKSPACE_PATH=$(find . -name "App.xcworkspace" -type d | head -n 1)
-          
-          if [ -z "$WORKSPACE_PATH" ]; then
-            echo "Fejl: Kunne stadig ikke finde App.xcworkspace"
-            exit 1
-          fi
-          
-          echo "Fandt workspace på: $WORKSPACE_PATH"
-          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
-          cd "$WORKSPACE_DIR"
-          
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
 
       - name: Pak appen som Artifact
         run: |
-          WORKSPACE_PATH=$(find . -name "App.xcworkspace" -type d | head -n 1)
-          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
-          cd "$WORKSPACE_DIR"
-          
+          cd ios/App
           BUILD_DIR=$(find . -name "Build" -type d | head -n 1)
           APP_PATH=$(find "$BUILD_DIR" -name "App.app" -type d | head -n 1)
           
