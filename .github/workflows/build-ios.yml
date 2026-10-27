@@ -20,20 +20,11 @@ jobs:
       - name: Installer afhængigheder
         run: npm install
 
-      - name: Tving oprettelse af iOS platform og synkroniser
-        run: |
-          echo "Tilføjer iOS platform..."
-          npx cap add ios || echo "iOS platform findes allerede eller kunne ikke tilføjes automatisk"
-          
-          echo "Kører sync..."
-          npx cap sync ios
+      - name: Byg web-applikationen (generer web-filer)
+        run: npm run build
 
-      - name: Vis alt indhold i roden efter sync
-        run: |
-          echo "Mapper i roden:"
-          ls -la
-          echo "Indhold af ios mappen (hvis den findes):"
-          ls -la ios || echo "ios-mappen findes stadig ikke!"
+      - name: Synkroniser med Capacitor
+        run: npx cap sync ios
 
       - name: Find og Byg iOS-projekt automatisk
         run: |
