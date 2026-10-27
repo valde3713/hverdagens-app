@@ -44,12 +44,11 @@ jobs:
           cd "$PARENT_DIR"
           zip -r App.zip App.app
           
-          # Flyt zip-filen helt ud til roden af repositoriet
-          pwd
-          mv App.zip ../../../App.zip
+          # Kopier den direkte til rodmappen så vi er sikre på den er der
+          cp App.zip ../../../App.zip || cp App.zip ../../App.zip || true
 
       - name: Upload app som Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-simulator
-          path: App.zip
+          path: '**/App.zip'
