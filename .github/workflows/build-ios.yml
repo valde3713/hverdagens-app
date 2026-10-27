@@ -26,17 +26,31 @@ jobs:
       - name: Synkroniser med Capacitor
         run: npx cap sync ios
 
-      - name: Tjek indhold af ios/App mappen
-        run: ls -la ios/App
-
-      - name: Byg iOS-projekt (Simulator)
-        working-directory: ios/App
+      - name: Find workspace og byg appen automatisk
         run: |
+          # Find stien til App.xcworkspace uanset hvor den ligger
+          WORKSPACE_PATH=$(find . -name "App.xcworkspace" -type d | head -n 1)
+          
+          if [ -z "$WORKSPACE_PATH" ]; then
+            echo "Fejl: Kunne ikke finde App.xcworkspace"
+            exit 1
+          fi
+          
+          echo "Fandt workspace på: $WORKSPACE_PATH"
+          
+          # Gå ind i mappen hvor workspace ligger
+          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
+          cd "$WORKSPACE_DIR"
+          
+          # Byg appen
           xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
 
-      - name: Find og pak appen
-        working-directory: ios/App
+      - name: Pak appen som Artifact
         run: |
+          WORKSPACE_PATH=$(find . -name "App.xcworkspace" -type d | head -n 1)
+          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
+          cd "$WORKSPACE_DIR"
+          
           BUILD_DIR=$(find . -name "Build" -type d | head -n 1)
           APP_PATH=$(find "$BUILD_DIR" -name "App.app" -type d | head -n 1)
           
@@ -46,10 +60,11 @@ jobs:
           cd "$PARENT_DIR"
           zip -r App.zip App.app
           
-          echo "ZIP_PATH=$PARENT_DIR/App.zip" >> $GITHUB_ENV
+          # Flyt den færdige zip til roden så uploaderen nemt kan finde den
+          mv App.zip ../../App.zip
 
       - name: Upload app som Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-simulator
-          path: ios/App/ios/App.zip
+          path: App.zip
