@@ -33,7 +33,6 @@ jobs:
           echo "Vis indholdet af produkter:"
           find ios/App/Build -name "*.app"
           
-          # Finder mappen automatisk uanset den præcise sti
           APP_PATH=$(find ios/App/Build -name "App.app" -type d | head -n 1)
           echo "Fandt app på: $APP_PATH"
           
@@ -44,4 +43,3 @@ jobs:
         with:
           name: ios-app-simulator
           path: ios/App/App.zip
-
