@@ -22,3 +22,25 @@ jobs:
 
       - name: Forbered og synkroniser med Capacitor
         run: npm run mobile:sync
+
+      - name: Byg iOS-projekt (Simulator)
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
+
+      - name: Find og pak appen
+        run: |
+          echo "Vis indholdet af produkter:"
+          find ios/App/Build -name "*.app"
+          
+          # Finder mappen automatisk uanset den præcise sti
+          APP_PATH=$(find ios/App/Build -name "App.app" -type d | head -n 1)
+          echo "Fandt app på: $APP_PATH"
+          
+          zip -r App.zip "$APP_PATH"
+
+      - name: Upload app som Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-simulator
+          path: ios/App/App.zip
