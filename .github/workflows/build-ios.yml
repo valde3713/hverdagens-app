@@ -20,8 +20,11 @@ jobs:
       - name: Installer afhængigheder
         run: npm install
 
-      - name: Forbered og synkroniser med Capacitor (via dit eget script)
-        run: npm run mobile:sync
+      - name: Kør mobile:prepare (generer web-filer)
+        run: npm run mobile:prepare
+
+      - name: Kør cap sync
+        run: npx cap sync ios
 
       - name: Find og Byg iOS-projekt automatisk
         run: |
