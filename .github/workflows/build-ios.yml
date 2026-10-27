@@ -23,10 +23,10 @@ jobs:
       - name: Forbered og synkroniser med Capacitor
         run: npm run mobile:sync
 
-      - name: Tjek om mappen findes
+      - name: Tjek indhold i ios-mappen
         run: |
-          echo "Indhold af ios/App mappen:"
-          ls -la ios/App || echo "ios/App findes ikke!"
+          echo "Indhold af ios-roden:"
+          ls -la ios
 
       - name: Byg iOS-projekt (Simulator)
         working-directory: ios/App
@@ -44,4 +44,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-simulator
-          path: ios/App/ios/App.zip
+          path: ios/App/App.zip
