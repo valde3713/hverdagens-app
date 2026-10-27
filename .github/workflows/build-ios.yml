@@ -23,25 +23,44 @@ jobs:
       - name: Forbered og synkroniser med Capacitor
         run: npm run mobile:sync
 
-      - name: Tjek indhold i ios-mappen
+      - name: Find og Byg iOS-projekt automatisk
         run: |
-          echo "Indhold af ios-roden:"
-          ls -la ios
-
-      - name: Byg iOS-projekt (Simulator)
-        working-directory: ios/App
-        run: |
+          echo "Søger efter App.xcworkspace i hele projektet..."
+          WORKSPACE_PATH=$(find . -name "App.xcworkspace" -type d | head -n 1)
+          
+          if [ -z "$WORKSPACE_PATH" ]; then
+            echo "Fejl: Kunne ikke finde App.xcworkspace nogen steder!"
+            exit 1
+          fi
+          
+          echo "Fandt workspace på: $WORKSPACE_PATH"
+          
+          # Hent mappen hvor workspace ligger (f.eks. ios/App)
+          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
+          echo "Skifter til mappen: $WORKSPACE_DIR"
+          cd "$WORKSPACE_DIR"
+          
+          # Byg appen
           xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
 
       - name: Find og pak appen
-        working-directory: ios/App
         run: |
-          APP_PATH=$(find Build -name "App.app" -type d | head -n 1)
+          # Finder mappen uanset hvor build-mappen lander
+          BUILD_DIR=$(find . -name "Build" -type d | head -n 1)
+          APP_PATH=$(find "$BUILD_DIR" -name "App.app" -type d | head -n 1)
+          
           echo "Fandt app på: $APP_PATH"
-          zip -r App.zip "$APP_PATH"
+          
+          # Zip appen der hvor den er
+          PARENT_DIR=$(dirname "$APP_PATH")
+          cd "$PARENT_DIR"
+          zip -r App.zip App.app
+          
+          # Gem stien til upload
+          echo "ZIP_PATH=$PARENT_DIR/App.zip" >> $GITHUB_ENV
 
       - name: Upload app som Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-simulator
-          path: ios/App/App.zip
+          path: '**/App.zip'
