@@ -23,11 +23,11 @@ jobs:
       - name: Kør mobile:prepare (generer web-filer)
         run: npm run mobile:prepare
 
-      - name: Genskab iOS platform og synkroniser rent
-        run: |
-          rm -rf ios
-          npx cap add ios
-          npx cap sync ios
+      - name: Tilføj iOS platform og vis output
+        run: npx cap add ios --verbose
+
+      - name: List hele roden for at se om ios mappen blev lavet
+        run: ls -la
 
       - name: Find workspace og byg appen automatisk
         run: |
