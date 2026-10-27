@@ -23,8 +23,13 @@ jobs:
       - name: Kør mobile:prepare (generer web-filer)
         run: npm run mobile:prepare
 
-      - name: Kør cap sync
-        run: npx cap sync ios
+      - name: Tilføj iOS platform (hvis den ikke findes) og synkroniser
+        run: |
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Vis indhold af roden efter sync
+        run: ls -la && ls -la ios || echo "Ingen ios-mappe"
 
       - name: Find og Byg iOS-projekt automatisk
         run: |
