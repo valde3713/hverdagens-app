@@ -1,10 +1,17 @@
-    - name: Byg Xcode Projekt (Uden certifikater)
+    - name: Byg Xcode til fysisk iPhone (arm64)
       run: |
         cd ios/App
-        xcodebuild ARCHS=arm64 -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGN_ING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" PROVISIONING_PROFILE_REQUIRED=NO clean build
+        xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos ARCHS="arm64" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY="" PROVISIONING_PROFILE_REQUIRED=NO clean build
 
-    - name: Pak Xcode .app til iOS .ipa
+    - name: Pak den rigtige .app til .ipa
       run: |
         mkdir -p Payload
+        # Finder den rigtige iphoneos-bygning og kopierer den til Payload
         cp -r ios/App/build/Release-iphoneos/App.app Payload/ 2>/dev/null || cp -r ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/App.app Payload/
         zip -r HverdagensApp.ipa Payload
+
+    - name: Upload jeres færdige .ipa artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: iOS-HverdagensApp-Fysisk-Telefon
+        path: HverdagensApp.ipa
