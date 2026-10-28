@@ -1,47 +1,10 @@
-name: Byg iOS App
+    - name: Byg Xcode Projekt (Uden certifikater)
+      run: |
+        cd ios/App
+        xcodebuild ARCHS=arm64 -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGN_ING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" PROVISIONING_PROFILE_REQUIRED=NO clean build
 
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: macos-latest
-
-    steps:
-      - name: Hent koden
-        uses: actions/checkout@v4
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Installer afhængigheder
-        run: npm install
-
-      - name: Forbered og synkroniser med Capacitor
-        run: npm run mobile:sync
-
-      - name: Tjek om mappen findes
-        run: |
-          echo "Indhold af ios/App mappen:"
-          ls -la ios/App || echo "ios/App findes ikke!"
-
-      - name: Byg iOS-projekt (Simulator)
-        working-directory: ios/App
-        run: |
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
-
-      - name: Find og pak appen
-        working-directory: ios/App
-        run: |
-          APP_PATH=$(find Build -name "App.app" -type d | head -n 1)
-          echo "Fandt app på: $APP_PATH"
-          zip -r App.zip "$APP_PATH"
-
-      - name: Upload app som Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-app-simulator
-          path: ios/App/ios/App/App.zip
+    - name: Pak Xcode .app til iOS .ipa
+      run: |
+        mkdir -p Payload
+        cp -r ios/App/build/Release-iphoneos/App.app Payload/ 2>/dev/null || cp -r ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/App.app Payload/
+        zip -r HverdagensApp.ipa Payload
