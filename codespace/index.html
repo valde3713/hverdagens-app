@@ -4,8 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f5f7ef">
-    <meta name="description" content="Download Hverdagens app til Android.">
+    <meta name="description" content="Download Hverdagens app til Android og iOS.">
     <title>Download appen — Hverdagens app</title>
+    <!-- PWA meta-tags så iPhonen ved den kan køre i fuld skærm efter godkendelse -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hverdagens App">
+    <link rel="apple-touch-icon" href="../leaf.svg">
+    
     <link rel="icon" href="../leaf.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../styles.css">
     <style>
@@ -14,7 +20,13 @@
       .download-card h1 { margin: 24px 0 12px; color: var(--green-dark); font-size: 32px; letter-spacing: -1px; }
       .download-card p { color: #758379; font-size: 14px; line-height: 1.7; }
       .download-card .button { margin: 12px 0; }
-      .download-note { font-size: 12px !important; }
+      .download-note { font-size: 12px !important; margin-bottom: 24px; }
+      
+      /* Nye stilarter til iOS listen */
+      .ios-list { text-align: left; padding-left: 20px; margin: 20px 0; color: #758379; font-size: 14px; line-height: 1.8; }
+      .ios-list strong { color: var(--green-dark); }
+      .share-icon { font-size: 18px; line-height: 0; display: inline-block; transform: translateY(2px); }
+      
       @media (max-width: 480px) { .download-card { padding: 26px; } }
     </style>
   </head>
@@ -27,13 +39,46 @@
           </span>
           <span>hverdagens<span class="brand-light">app</span></span>
         </a>
-        <p class="eyebrow" style="margin-top: 34px">ANDROID</p>
-        <h1>Hent appen</h1>
-        <p>Download Hverdagens app til din Android-enhed. Åbn APK-filen, når download er færdig, og følg vejledningen på skærmen.</p>
-        <a class="button button-primary button-wide" href="./hverdagens-app.apk" download>Download APK <span aria-hidden="true">↓</span></a>
-        <p class="download-note">Dette er en testversion, ikke fra Google Play. Android kan bede dig om at tillade installation fra denne kilde.</p>
+
+        <!-- ANDROID SEKTION -->
+        <div id="android-section">
+          <p class="eyebrow" style="margin-top: 34px">ANDROID</p>
+          <h1>Hent appen</h1>
+          <p>Download Hverdagens app til din Android-enhed. Åbn APK-filen, når download er færdig, og følg vejledningen på skærmen.</p>
+          <a class="button button-primary button-wide" href="./hverdagens-app.apk" download>Download APK <span aria-hidden="true">↓</span></a>
+          <p class="download-note">Dette er en testversion, ikke fra Google Play. Android kan bede dig om at tillade installation fra denne kilde.</p>
+        </div>
+
+        <!-- IOS / IPHONE SEKTION -->
+        <div id="ios-section" style="display: none;">
+          <p class="eyebrow" style="margin-top: 34px">APPLE / IOS</p>
+          <h1>Føj til startskærm</h1>
+          <p>Apple tillader ikke direkte installation uden en Mac. Du kan i stedet installere appen direkte på din iPhone eller iPad på under 5 sekunder:</p>
+          
+          <ol class="ios-list">
+            <li>Tryk på <strong>"Del"-knappen</strong> i bunden af Safari (firkanten med pilen opad: <span class="share-icon">⎋</span>).</li>
+            <li>Scroll en smule ned på menuen og vælg <strong>"Føj til startskærm"</strong>.</li>
+            <li>Tryk på <strong>"Tilføj"</strong> øverst i højre hjørne for at godkende.</li>
+          </ol>
+          
+          <p class="download-note">Herefter lægger appen sig på din startskærm med rigtigt ikon, gemmer dine data via Supabase og kører i fuld skærm uden browser-bjælker!</p>
+        </div>
+
         <a class="privacy-link" href="../">Tilbage til Hverdagens app</a>
       </section>
     </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        // Tjekker om enheden er en iPhone, iPad eller iPod
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOS) {
+          // Hvis det er iOS, skiftes sektionen ud med det samme
+          document.getElementById("android-section").style.display = "none";
+          document.getElementById("ios-section").style.display = "block";
+        }
+      });
+    </script>
   </body>
 </html>
