@@ -5,6 +5,7 @@ const dashboardMessage = document.querySelector("#admin-dashboard-message");
 const loginScreen = document.querySelector("#admin-login");
 const dashboard = document.querySelector("#admin-dashboard");
 const actions = document.querySelector("#admin-actions");
+let lastDashboard;
 const client = config?.supabaseUrl && config?.supabaseAnonKey
   ? window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey)
   : undefined;
@@ -40,7 +41,7 @@ function renderRows(container, rows, emptyMessage, renderRow) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.className = "admin-muted";
-    cell.colSpan = container.id === "admin-profiles" ? 7 : 3;
+    cell.colSpan = container.id === "admin-profiles" ? 8 : 4;
     cell.textContent = emptyMessage;
     row.append(cell);
     container.append(row);
@@ -53,7 +54,22 @@ function renderRows(container, rows, emptyMessage, renderRow) {
   }
 }
 
-function renderDashboard(data) {
+function addActionButton(row, label, action, attributes = {}, className = "button button-secondary") {
+  const cell = document.createElement("td");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.dataset.action = action;
+  button.textContent = label;
+  for (const [key, value] of Object.entries(attributes)) {
+    button.dataset[key] = value;
+  }
+  cell.append(button);
+  row.append(cell);
+}
+
+function renderDashboard(data, currentUserId) {
+  lastDashboard = data;
   document.querySelector("#admin-profile-count").textContent = String(data.profiles.length);
   document.querySelector("#admin-activity-count").textContent = String(data.activities.length);
   document.querySelector("#admin-public-count").textContent = String(
@@ -75,6 +91,27 @@ function renderDashboard(data) {
       addCell(row, formatDate(profile.created_at));
       addCell(row, `Vilkår: ${formatDate(profile.terms_accepted_at)} · Privatliv: ${formatDate(profile.privacy_accepted_at)}`);
       addCell(row, String(profile.activity_count));
+      const actionCell = document.createElement("td");
+      const actionGroup = document.createElement("div");
+      actionGroup.className = "admin-row-actions";
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "button button-secondary";
+      editButton.dataset.action = "edit-profile";
+      editButton.dataset.nickname = profile.nickname;
+      editButton.textContent = "Rediger";
+      actionGroup.append(editButton);
+      if (profile.user_id !== currentUserId && !profile.is_admin) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "button button-danger";
+        deleteButton.dataset.action = "delete-profile";
+        deleteButton.dataset.nickname = profile.nickname;
+        deleteButton.textContent = "Slet";
+        actionGroup.append(deleteButton);
+      }
+      actionCell.append(actionGroup);
+      row.append(actionCell);
     },
   );
   renderRows(
@@ -85,6 +122,13 @@ function renderDashboard(data) {
       addCell(row, activity.nickname);
       addCell(row, activity.description);
       addCell(row, formatDate(activity.created_at));
+      addActionButton(
+        row,
+        "Slet",
+        "delete-activity",
+        { activityId: activity.id },
+        "button button-danger",
+      );
     },
   );
 }
@@ -100,11 +144,25 @@ async function loadDashboard() {
   if (!Array.isArray(data?.profiles) || !Array.isArray(data?.activities)) {
     throw new Error("Serveren returnerede et ugyldigt dashboard-svar.");
   }
-  renderDashboard(data);
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) throw userError;
+  renderDashboard(data, user.id);
   dashboard.hidden = false;
   loginScreen.hidden = true;
   actions.hidden = false;
   document.querySelector("#admin-identity").textContent = "Admin";
+}
+
+async function runAdminAction(functionName, parameters, successMessage) {
+  const accessCode = document.querySelector("#admin-access-code").value;
+  const { data, error } = await client.rpc(functionName, {
+    requested_code: accessCode,
+    ...parameters,
+  });
+  if (error) throw error;
+  if (typeof data?.error === "string") throw new Error(data.error);
+  await loadDashboard();
+  showSuccess(dashboardMessage, successMessage);
 }
 
 async function signOut() {
@@ -164,6 +222,89 @@ document.querySelector("#admin-signout").addEventListener("click", async () => {
     showSuccess(loginMessage, "Du er logget ud.");
   } catch (error) {
     showError(dashboardMessage, error.message || "Du kunne ikke logges ud.");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#admin-profiles").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const nickname = button.dataset.nickname;
+  if (button.dataset.action === "delete-profile") {
+    if (!window.confirm(`Slet profilen "${nickname}" og alle dens gerninger? Dette kan ikke fortrydes.`)) return;
+    button.disabled = true;
+    try {
+      await runAdminAction(
+        "admin_delete_profile",
+        { requested_nickname: nickname },
+        `Profilen "${nickname}" og dens data er slettet.`,
+      );
+    } catch (error) {
+      showError(dashboardMessage, error.message || "Profilen kunne ikke slettes.");
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
+  if (button.dataset.action === "edit-profile") {
+    const profile = lastDashboard?.profiles.find((item) => item.nickname === nickname);
+    if (!profile) return;
+    const displayNameMode = window.prompt(
+      "Skriv nickname eller real_name for det offentlige navn:",
+      profile.display_name_mode,
+    );
+    if (displayNameMode === null) return;
+    const realName = window.prompt(
+      "Eget navn (bruges hvis real_name vælges; lad være tomt for at bevare et privat navn):",
+      profile.display_name_mode === "real_name" ? profile.display_name : "",
+    );
+    if (realName === null) return;
+    const bio = window.prompt("Profiltekst (maks. 240 tegn):", profile.bio || "");
+    if (bio === null) return;
+    const publicChoice = window.prompt(
+      "Skal profilen være offentlig? Skriv ja eller nej:",
+      profile.public_profile_enabled ? "ja" : "nej",
+    );
+    if (publicChoice === null) return;
+    if (!["ja", "nej"].includes(publicChoice.trim().toLowerCase())) {
+      showError(dashboardMessage, "Skriv ja eller nej for offentlig profil.");
+      return;
+    }
+    button.disabled = true;
+    try {
+      await runAdminAction(
+        "admin_update_profile",
+        {
+          requested_nickname: nickname,
+          requested_display_name_mode: displayNameMode.trim(),
+          requested_real_name: realName,
+          requested_bio: bio,
+          requested_public_profile_enabled: publicChoice.trim().toLowerCase() === "ja",
+        },
+        `Profilen "${nickname}" er opdateret.`,
+      );
+    } catch (error) {
+      showError(dashboardMessage, error.message || "Profilen kunne ikke opdateres.");
+    } finally {
+      button.disabled = false;
+    }
+  }
+});
+
+document.querySelector("#admin-activities").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action='delete-activity']");
+  if (!button || !window.confirm("Slet denne aktivitet? Dette kan ikke fortrydes.")) return;
+  button.disabled = true;
+  try {
+    await runAdminAction(
+      "admin_delete_activity",
+      { requested_activity_id: button.dataset.activityId },
+      "Aktiviteten er slettet.",
+    );
+  } catch (error) {
+    showError(dashboardMessage, error.message || "Aktiviteten kunne ikke slettes.");
   } finally {
     button.disabled = false;
   }

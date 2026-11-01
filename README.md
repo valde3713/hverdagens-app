@@ -26,6 +26,8 @@ Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst pri
 
 `/codespace-time/` logger ind med en eksisterende konto og en ekstra admin-kode på 4–64 bogstaver og/eller tal; der er ingen oprettelsesmulighed. Databasefunktionen `get_admin_dashboard()` returnerer kun data, hvis den verificerede bruger står i den private tabel `admin_users` og indtaster korrekt kode. Databasen gemmer kun en bcrypt-hash, begrænser forkerte forsøg og viser ikke private e-mailadresser.
 
+Admin kan redigere visningsnavn, profiltekst og offentlig profilstatus, slette enkelte aktiviteter og slette almindelige brugerkonti med deres aktiviteter. Admin-konti og den aktuelt indloggede konto kan ikke slettes fra oversigten. Kør `supabase-admin-management.sql` i SQL Editor efter `supabase.sql` for at aktivere handlingerne. Denne ekstra migration ændrer ikke hovedfilen `supabase.sql`.
+
 For at aktivere adminoversigten skal du køre hele `supabase.sql` i **Supabase Dashboard → SQL Editor**. Derefter vælger du selv en admin-kode og kører den særskilte SQL-kommando i README'en efter at have erstattet eksempelteksten. Koden gemmes som bcrypt-hash; del den ikke. Brug kun din egen konto som admin. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
 
 Kør dette i SQL Editor efter migrationen, og erstat teksten `SKRIV-DIN-EGEN-KODE-HER` med din egen kode på 4–64 bogstaver og/eller tal:

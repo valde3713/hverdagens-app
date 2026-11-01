@@ -34,6 +34,10 @@
       .admin-muted { color: #849187; }
       .admin-actions { display: flex; align-items: center; gap: 10px; }
       .admin-actions .button { min-height: 38px; }
+      .admin-row-actions { display: flex; gap: 6px; }
+      .admin-row-actions .button { min-height: 32px; padding: 0 10px; font-size: 11px; }
+      .button-danger { background: #f8e9e6; color: #914c3c; }
+      .button-danger:hover { background: #f2d8d2; }
       .admin-privacy { margin-top: 18px; color: #758379; font-size: 11px; line-height: 1.7; }
       @media (max-width: 680px) {
         .admin-shell { width: min(100% - 24px, 1120px); padding-top: 20px; }
@@ -98,14 +102,14 @@
         <section class="admin-panel">
           <h2>Profiler</h2>
           <table class="admin-table">
-            <thead><tr><th>Kaldenavn</th><th>Visningsnavn</th><th>Profiltekst</th><th>Status</th><th>Oprettet</th><th>Samtykke</th><th>Gerninger</th></tr></thead>
+            <thead><tr><th>Kaldenavn</th><th>Visningsnavn</th><th>Profiltekst</th><th>Status</th><th>Oprettet</th><th>Samtykke</th><th>Gerninger</th><th>Handlinger</th></tr></thead>
             <tbody id="admin-profiles"></tbody>
           </table>
         </section>
         <section class="admin-panel">
           <h2>Alle aktiviteter</h2>
           <table class="admin-table">
-            <thead><tr><th>Bruger</th><th>Aktivitet</th><th>Dato</th></tr></thead>
+            <thead><tr><th>Bruger</th><th>Aktivitet</th><th>Dato</th><th>Handlinger</th></tr></thead>
             <tbody id="admin-activities"></tbody>
           </table>
         </section>
