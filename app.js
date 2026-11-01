@@ -109,6 +109,7 @@ const translations = {
     "#confirm-new-passcode": "Skriv koden igen",
     "#password-form button": "Gem ny kode",
     "#nickname-form h3": "Skift kaldenavn",
+    "#nickname-lock-message": "Du kan skifte kaldenavn når som helst.",
     "label[for='new-nickname']": "Nyt kaldenavn",
     "#new-nickname": "3–20 bogstaver, tal eller _",
     "#nickname-submit": "Gem kaldenavn",
@@ -214,6 +215,7 @@ const translations = {
     "#confirm-new-passcode": "Type the passcode again",
     "#password-form button": "Save new passcode",
     "#nickname-form h3": "Change nickname",
+    "#nickname-lock-message": "You can change your nickname at any time.",
     "label[for='new-nickname']": "New nickname",
     "#new-nickname": "3–20 letters, numbers or _",
     "#nickname-submit": "Save nickname",
@@ -370,8 +372,6 @@ function renderLeaderboard(rows) {
   document.querySelector("#my-score").textContent = String(score);
   document.querySelector("#profile-score").textContent = String(score);
   document.querySelector("#my-rank").textContent = rank < 0 ? "–" : `#${rank + 1}`;
-  updateNicknameAvailability(score);
-
   leaderboardList.replaceChildren();
   if (sorted.length === 0) {
     leaderboardList.append(emptyState("Ingen har delt en gerning endnu. Vær den første!"));
@@ -791,21 +791,7 @@ function applyPreferences() {
       english ? "No profile text yet." : "Ingen profiltekst endnu."
     );
   }
-  updateNicknameAvailability(Number(document.querySelector("#profile-score").textContent));
   if (currentUser) loadDashboard();
-}
-
-function updateNicknameAvailability(score) {
-  const locked = score <= 35;
-  document.querySelector("#new-nickname").disabled = locked;
-  document.querySelector("#nickname-submit").disabled = locked;
-  document.querySelector("#nickname-lock-message").textContent = locked
-    ? (languageSetting.value === "en"
-      ? `You can change your nickname after sharing 36 good deeds. You have ${score}.`
-      : `Du kan skifte kaldenavn, når du har delt 36 gode gerninger. Du har delt ${score}.`)
-    : (languageSetting.value === "en"
-      ? "You have earned the right to change your nickname."
-      : "Du har optjent retten til at skifte kaldenavn.");
 }
 
 function loadPreferences() {

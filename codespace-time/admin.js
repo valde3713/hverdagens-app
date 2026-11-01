@@ -227,6 +227,26 @@ document.querySelector("#admin-signout").addEventListener("click", async () => {
   }
 });
 
+document.querySelector("#admin-add-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector("button[type='submit']");
+  const nickname = document.querySelector("#admin-new-nickname").value.trim();
+  button.disabled = true;
+  try {
+    await runAdminAction(
+      "admin_add_user",
+      { requested_nickname: nickname },
+      `Kontoen "${nickname}" har nu admin-adgang.`,
+    );
+    form.reset();
+  } catch (error) {
+    showError(dashboardMessage, error.message || "Admin-adgang kunne ikke tilføjes.");
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.querySelector("#admin-profiles").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;

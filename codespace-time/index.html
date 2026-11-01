@@ -36,6 +36,9 @@
       .admin-actions .button { min-height: 38px; }
       .admin-row-actions { display: flex; gap: 6px; }
       .admin-row-actions .button { min-height: 32px; padding: 0 10px; font-size: 11px; }
+      .admin-add-form { display: flex; align-items: end; gap: 12px; max-width: 560px; }
+      .admin-add-form label { display: block; margin-bottom: 6px; color: var(--green-dark); font-size: 12px; font-weight: 600; }
+      .admin-add-form input { width: min(280px, 100%); }
       .button-danger { background: #f8e9e6; color: #914c3c; }
       .button-danger:hover { background: #f2d8d2; }
       .admin-privacy { margin-top: 18px; color: #758379; font-size: 11px; line-height: 1.7; }
@@ -48,6 +51,7 @@
         .admin-stat strong { margin-top: 0; font-size: 22px; }
         .admin-panel { padding: 15px; }
         .admin-table { min-width: 880px; }
+        .admin-add-form { align-items: stretch; flex-direction: column; }
       }
     </style>
     <script src="../config.js"></script>
@@ -99,6 +103,17 @@
           <article class="admin-stat"><span>Aktiviteter</span><strong id="admin-activity-count">0</strong></article>
           <article class="admin-stat"><span>Offentlige profiler</span><strong id="admin-public-count">0</strong></article>
         </div>
+        <section class="admin-panel">
+          <h2>Tilføj admin-konto</h2>
+          <p class="admin-muted">Skriv kaldenavnet på en eksisterende konto. Personen skal have oprettet sin konto først.</p>
+          <form id="admin-add-form" class="admin-add-form">
+            <div>
+              <label for="admin-new-nickname">Kaldenavn</label>
+              <input id="admin-new-nickname" autocomplete="off" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" required>
+            </div>
+            <button class="button button-secondary" type="submit">Tilføj admin</button>
+          </form>
+        </section>
         <section class="admin-panel">
           <h2>Profiler</h2>
           <table class="admin-table">

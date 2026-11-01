@@ -278,13 +278,86 @@ begin
 end;
 $$;
 
+create or replace function public.admin_add_user(
+  requested_code text,
+  requested_nickname text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  profile_id uuid;
+begin
+  if not public.verify_admin_access(requested_code) then
+    return jsonb_build_object('error', 'Admin-koden er forkert, ikke sat op, eller adgangen er låst.');
+  end if;
+
+  select p.id
+  into profile_id
+  from public.profiles as p
+  where lower(p.nickname) = lower(trim(requested_nickname));
+
+  if profile_id is null then
+    return jsonb_build_object('error', 'Der findes ingen konto med det kaldenavn.');
+  end if;
+
+  insert into public.admin_users (user_id)
+  values (profile_id)
+  on conflict (user_id) do nothing;
+
+  return jsonb_build_object('added', true);
+end;
+$$;
+
+create or replace function public.change_profile_nickname(new_nickname text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_user_id uuid := auth.uid();
+  normalized_nickname text := trim(new_nickname);
+begin
+  if current_user_id is null then
+    raise exception 'You must be signed in to change your nickname.';
+  end if;
+
+  if normalized_nickname is null
+     or normalized_nickname !~ '^[A-Za-z0-9_]{3,20}$' then
+    raise exception 'Nickname must be 3–20 letters, numbers, or underscores.';
+  end if;
+
+  update public.profiles
+  set nickname = normalized_nickname
+  where id = current_user_id;
+
+  if not found then
+    raise exception 'Profile not found.';
+  end if;
+
+  update auth.users
+  set email = lower(normalized_nickname) || '@users.hverdagens.invalid',
+      raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+        || jsonb_build_object('nickname', normalized_nickname),
+      updated_at = now()
+  where id = current_user_id;
+end;
+$$;
+
 revoke all on function public.get_admin_dashboard(text) from public, anon;
 revoke all on function public.admin_update_profile(text, text, text, text, text, boolean) from public, anon;
 revoke all on function public.admin_delete_activity(text, uuid) from public, anon;
 revoke all on function public.admin_delete_profile(text, text) from public, anon;
+revoke all on function public.admin_add_user(text, text) from public, anon;
+revoke all on function public.change_profile_nickname(text) from public, anon;
 grant execute on function public.get_admin_dashboard(text) to authenticated;
 grant execute on function public.admin_update_profile(text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_delete_activity(text, uuid) to authenticated;
 grant execute on function public.admin_delete_profile(text, text) to authenticated;
+grant execute on function public.admin_add_user(text, text) to authenticated;
+grant execute on function public.change_profile_nickname(text) to authenticated;
 
 notify pgrst, 'reload schema';
