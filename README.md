@@ -26,28 +26,11 @@ Ved oprettelse skal brugeren acceptere vilkårene og bekræfte at have læst pri
 
 `/codespace-time/` logger ind med en eksisterende konto og en ekstra admin-kode på 4–64 bogstaver og/eller tal; der er ingen oprettelsesmulighed. Databasefunktionen `get_admin_dashboard()` returnerer kun data, hvis den verificerede bruger står i den private tabel `admin_users` og indtaster korrekt kode. Databasen gemmer kun en bcrypt-hash, begrænser forkerte forsøg og viser ikke private e-mailadresser.
 
-Admin kan tilføje flere eksisterende konti som admins, redigere visningsnavn, profiltekst og offentlig profilstatus, slette enkelte aktiviteter og slette almindelige brugerkonti med deres aktiviteter. Admin-konti og den aktuelt indloggede konto kan ikke slettes fra oversigten. Kør `supabase-admin-management.sql` i SQL Editor efter `supabase.sql` for at aktivere handlingerne. Migrationen fjerner også grænsen på 36 gerninger for ændring af kaldenavn. Denne ekstra migration ændrer ikke hovedfilen `supabase.sql`.
+Admins kan redigere visningsnavn, profiltekst og offentlig profilstatus, slette enkelte aktiviteter og slette almindelige brugerkonti med deres aktiviteter. Admin-konti og den aktuelt indloggede konto kan ikke slettes fra oversigten. Kør `supabase-admin-management.sql` i SQL Editor efter `supabase.sql` for at aktivere handlingerne. Migrationen fjerner også grænsen på 36 gerninger for ændring af kaldenavn. Denne ekstra migration ændrer ikke hovedfilen `supabase.sql`.
 
-For at aktivere adminoversigten skal du køre hele `supabase.sql` i **Supabase Dashboard → SQL Editor**. Derefter vælger du selv en admin-kode og kører den særskilte SQL-kommando i README'en efter at have erstattet eksempelteksten. Koden gemmes som bcrypt-hash; del den ikke. Brug kun din egen konto som admin. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
+Der kan kun være én konto med rollen `owner`. Owner får et mærke på sin profil og er den eneste, der kan tilføje admins fra adminoversigten. Kør `supabase-admin-setup.sql` efter begge migrationer. Filen sætter kaldenavnet `test` som Owner; erstat det, hvis din konto har et andet kaldenavn. Erstat admin-kaldenavnene og `VAELG_DIN_EGEN_ADMIN_KODE` med eksisterende konti og en fælles admin-kode, du selv vælger. Tilføj eller fjern admin-kaldenavne efter behov. Hver person logger stadig ind med sin egen personlige konto-kode plus den fælles admin-kode. Skriv aldrig personlige login-koder i SQL.
 
-Kør dette i SQL Editor efter migrationen, og erstat teksten `SKRIV-DIN-EGEN-KODE-HER` med din egen kode på 4–64 bogstaver og/eller tal:
-
-```sql
-update public.admin_users
-set access_code_hash = extensions.crypt(
-  'SKRIV-DIN-EGEN-KODE-HER',
-  extensions.gen_salt('bf')
-)
-where user_id in (
-  select id
-  from auth.users
-  where lower(email) = 'admin@users.hverdagens.invalid'
-);
-```
-
-Koden gemmes som bcrypt-hash. Vælg helst en længere blanding af bogstaver og tal, og del ikke den rigtige kode. Efter fem forkerte forsøg låses admin-koden i 15 minutter.
-
-Hvis migrationen allerede er kørt, kør den opdaterede adminsektion fra SQL-filen, og sæt derefter admin-koden med SQL-kommandoen.
+Admin-koden gemmes som bcrypt-hash. Vælg en unik kode, og del den ikke. Efter fem forkerte forsøg låses admin-koden i 15 minutter. Der er ingen offentlig kontooprettelse, og private e-mailadresser udleveres ikke af dashboardet.
 
 Databasepolitikkerne begrænser læsning og ændring til de nødvendige roller; brugere kan kun slette egne gerninger. Kaldenavne valideres også i databasen. `get_login_email` beregner appens syntetiske loginadresse ud fra kaldenavnet i stedet for at slå konti op. Supabase `anon`/publishable-nøglen er offentlig og må gerne ligge i frontend; `service_role`-nøglen og databaseadgangskoden må aldrig udgives.
 

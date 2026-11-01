@@ -147,6 +147,7 @@ async function loadDashboard() {
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError) throw userError;
   renderDashboard(data, user.id);
+  document.querySelector("#admin-user-management").hidden = data.current_role !== "owner";
   dashboard.hidden = false;
   loginScreen.hidden = true;
   actions.hidden = false;

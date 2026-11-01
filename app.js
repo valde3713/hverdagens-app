@@ -356,6 +356,9 @@ function renderMyProfile(profile) {
   document.querySelector("#profile-bio").value = profile.bio || "";
   document.querySelector("#profile-email").value = profile.email || "";
   document.querySelector("#profile-public-enabled").checked = Boolean(profile.public_profile_enabled);
+  const roleBadge = document.querySelector("#profile-admin-role");
+  roleBadge.hidden = !profile.admin_role;
+  roleBadge.textContent = profile.admin_role === "owner" ? "Owner" : profile.admin_role === "admin" ? "Admin" : "";
   document.querySelector("#my-profile-bio").textContent = profile.bio || (
     languageSetting.value === "en" ? "No profile text yet." : "Ingen profiltekst endnu."
   );

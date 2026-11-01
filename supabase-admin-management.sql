@@ -1,3 +1,24 @@
+alter table public.admin_users
+  add column if not exists role text not null default 'admin';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'admin_users_role_check'
+      and conrelid = 'public.admin_users'::regclass
+  ) then
+    alter table public.admin_users
+      add constraint admin_users_role_check check (role in ('admin', 'owner'));
+  end if;
+end;
+$$;
+
+create unique index if not exists admin_users_single_owner_idx
+  on public.admin_users (role)
+  where role = 'owner';
+
 create or replace function public.verify_admin_access(requested_code text)
 returns boolean
 language plpgsql
@@ -78,6 +99,11 @@ begin
 
   select jsonb_build_object(
     'generated_at', now(),
+    'current_role', (
+      select admins.role
+      from public.admin_users as admins
+      where admins.user_id = auth.uid()
+    ),
     'profiles', coalesce((
       select jsonb_agg(
         jsonb_build_object(
@@ -294,6 +320,15 @@ begin
     return jsonb_build_object('error', 'Admin-koden er forkert, ikke sat op, eller adgangen er låst.');
   end if;
 
+  if not exists (
+    select 1
+    from public.admin_users as admins
+    where admins.user_id = auth.uid()
+      and admins.role = 'owner'
+  ) then
+    return jsonb_build_object('error', 'Kun Owner kan tilføje admin-konti.');
+  end if;
+
   select p.id
   into profile_id
   from public.profiles as p
@@ -303,12 +338,47 @@ begin
     return jsonb_build_object('error', 'Der findes ingen konto med det kaldenavn.');
   end if;
 
-  insert into public.admin_users (user_id)
-  values (profile_id)
+  insert into public.admin_users (user_id, access_code_hash, role)
+  values (
+    profile_id,
+    extensions.crypt(requested_code, extensions.gen_salt('bf')),
+    'admin'
+  )
   on conflict (user_id) do nothing;
 
   return jsonb_build_object('added', true);
 end;
+$$;
+
+create or replace function public.get_my_profile()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'user_id', p.id,
+    'nickname', p.nickname,
+    'display_name_mode', p.display_name_mode,
+    'display_name', case
+      when p.display_name_mode = 'real_name' and private.real_name is not null
+        then private.real_name
+      else p.nickname
+    end,
+    'real_name', private.real_name,
+    'bio', p.bio,
+    'email', private.email,
+    'public_profile_enabled', private.public_profile_enabled,
+    'public_profile_enabled_at', private.public_profile_enabled_at,
+    'terms_accepted_at', private.terms_accepted_at,
+    'privacy_accepted_at', private.privacy_accepted_at,
+    'admin_role', admins.role
+  )
+  from public.profiles as p
+  left join public.profile_private as private on private.user_id = p.id
+  left join public.admin_users as admins on admins.user_id = p.id
+  where p.id = (select auth.uid());
 $$;
 
 create or replace function public.change_profile_nickname(new_nickname text)
@@ -359,5 +429,6 @@ grant execute on function public.admin_delete_activity(text, uuid) to authentica
 grant execute on function public.admin_delete_profile(text, text) to authenticated;
 grant execute on function public.admin_add_user(text, text) to authenticated;
 grant execute on function public.change_profile_nickname(text) to authenticated;
+grant execute on function public.get_my_profile() to authenticated;
 
 notify pgrst, 'reload schema';

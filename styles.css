@@ -160,6 +160,8 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 .profile-panel { display: flex; align-items: center; gap: 19px; padding: 25px; }
 .profile-panel .eyebrow { margin-bottom: 6px; }
 .profile-panel h2 { font-size: 19px; }
+.role-badge { display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 999px; background: #e3eddd; color: var(--green-dark); font-size: 11px; font-weight: 700; }
+.role-badge[hidden] { display: none; }
 .profile-avatar { display: grid; width: 62px; height: 62px; flex: 0 0 62px; place-items: center; border-radius: 19px; background: #e3eddd; color: var(--green); font: 700 22px system-ui, sans-serif; }
 .profile-stats { margin-top: 16px; padding: 24px; }
 .profile-stats p:not(.eyebrow) { display: flex; align-items: baseline; gap: 8px; color: #839084; font-size: 12px; }
