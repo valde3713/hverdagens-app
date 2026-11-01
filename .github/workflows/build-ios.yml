@@ -1,0 +1,55 @@
+name: Byg iOS App
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Installer afhængigheder
+        run: npm install
+
+      - name: Kør mobile:prepare (generer web-filer)
+        run: npm run mobile:prepare
+
+      - name: Tilføj iOS platform og synkroniser
+        run: |
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Byg iOS-projekt (Simulator)
+        run: |
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath Build
+
+      - name: Pak appen som Artifact
+        run: |
+          cd ios/App
+          BUILD_DIR=$(find . -name "Build" -type d | head -n 1)
+          APP_PATH=$(find "$BUILD_DIR" -name "App.app" -type d | head -n 1)
+          
+          echo "Fandt app på: $APP_PATH"
+          PARENT_DIR=$(dirname "$APP_PATH")
+          cd "$PARENT_DIR"
+          zip -r App.zip App.app
+          
+          # Kopier den direkte til rodmappen så vi er sikre på den er der
+          cp App.zip ../../../App.zip || cp App.zip ../../App.zip || true
+
+      - name: Upload app som Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-simulator
+          path: '**/App.zip'
+
