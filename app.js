@@ -24,6 +24,7 @@ const descriptionInput = document.querySelector("#activity-description");
 const activityImageInput = document.querySelector("#activity-image");
 const activityCameraInput = document.querySelector("#activity-camera-input");
 const activityImagePreview = document.querySelector("#activity-image-preview");
+const nativeCamera = window.Capacitor?.Plugins?.Camera || null;
 let selectedActivityImage;
 const leaderboardList = document.querySelector("#leaderboard-list");
 const recentList = document.querySelector("#recent-list");
@@ -765,18 +766,46 @@ activityForm.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#activity-camera-button").addEventListener("click", () => activityCameraInput.click());
+document.querySelector("#activity-camera-button").addEventListener("click", async () => {
+  if (!nativeCamera) {
+    activityCameraInput.click();
+    return;
+  }
+  try {
+    const photo = await nativeCamera.getPhoto({
+      source: "CAMERA",
+      resultType: "base64",
+      quality: 75,
+      width: 1600,
+      height: 1600,
+      allowEditing: false,
+      saveToGallery: false,
+      correctOrientation: true
+    });
+    const imageType = `image/${photo.format === "jpeg" ? "jpeg" : photo.format}`;
+    const imageBytes = Uint8Array.from(atob(photo.base64String), (character) => character.charCodeAt(0));
+    const imageFile = new File([imageBytes], `camera-${Date.now()}.${photo.format}`, { type: imageType });
+    handleActivityImageFile(imageFile);
+  } catch (error) {
+    if (error?.message === "User cancelled photos app") return;
+    displayError(error);
+  }
+});
 document.querySelector("#activity-gallery-button").addEventListener("click", () => activityImageInput.click());
 
 function handleActivityImageSelection(input) {
   const [file] = input.files;
   if (!file) return;
+  input.value = "";
+  handleActivityImageFile(file);
+}
+
+function handleActivityImageFile(file) {
   if (activityImagePreview.dataset.objectUrl) URL.revokeObjectURL(activityImagePreview.dataset.objectUrl);
   activityImagePreview.dataset.objectUrl = "";
   activityImagePreview.hidden = true;
   activityImagePreview.removeAttribute("src");
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
-    input.value = "";
     selectedActivityImage = undefined;
     showNotice(languageSetting.value === "en"
       ? "Choose a JPEG, PNG, or WebP image smaller than 5 MB."
@@ -784,7 +813,6 @@ function handleActivityImageSelection(input) {
     return;
   }
   selectedActivityImage = file;
-  input.value = "";
   const objectUrl = URL.createObjectURL(file);
   activityImagePreview.src = objectUrl;
   activityImagePreview.dataset.objectUrl = objectUrl;
