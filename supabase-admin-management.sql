@@ -452,6 +452,49 @@ as $$
   where p.id = (select auth.uid());
 $$;
 
+create or replace function public.get_public_profile(requested_user_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'user_id', p.id,
+    'display_name', case
+      when p.display_name_mode = 'real_name' and private.real_name is not null
+        then private.real_name
+      else p.nickname
+    end,
+    'bio', p.bio,
+    'admin_role', admins.role,
+    'points', (select count(*) from public.activities as counted where counted.user_id = p.id),
+    'activities', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', recent.id,
+          'description', recent.description,
+          'created_at', recent.created_at
+        )
+        order by recent.created_at desc
+      )
+      from (
+        select id, description, created_at
+        from public.activities
+        where user_id = p.id
+        order by created_at desc
+        limit 100
+      ) as recent
+    ), '[]'::jsonb)
+  )
+  from public.profiles as p
+  left join public.profile_private as private on private.user_id = p.id
+  left join public.admin_users as admins on admins.user_id = p.id
+  where p.id = requested_user_id
+    and (private.public_profile_enabled or p.id = (select auth.uid()))
+    and (select auth.uid()) is not null;
+$$;
+
 create or replace function public.change_profile_nickname(new_nickname text)
 returns void
 language plpgsql
@@ -512,5 +555,6 @@ grant execute on function public.admin_add_user(text, text) to authenticated;
 grant execute on function public.admin_remove_user(text, text) to authenticated;
 grant execute on function public.change_profile_nickname(text) to authenticated;
 grant execute on function public.get_my_profile() to authenticated;
+grant execute on function public.get_public_profile(uuid) to authenticated;
 
 notify pgrst, 'reload schema';

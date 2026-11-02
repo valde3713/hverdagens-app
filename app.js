@@ -433,6 +433,9 @@ async function openPublicProfile(userId) {
     document.querySelectorAll(".page").forEach((element) => { element.hidden = element.id !== "public-profile-page"; });
     document.querySelector("#public-profile-name").textContent = data.display_name;
     document.querySelector("#public-profile-avatar").textContent = data.display_name.charAt(0).toUpperCase();
+    const roleBadge = document.querySelector("#public-profile-admin-role");
+    roleBadge.hidden = !data.admin_role;
+    roleBadge.textContent = data.admin_role === "owner" ? "Owner" : data.admin_role === "admin" ? "Admin" : "";
     document.querySelector("#public-profile-bio").textContent = data.bio || (
       languageSetting.value === "en" ? "No profile text yet." : "Ingen profiltekst endnu."
     );
