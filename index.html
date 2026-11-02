@@ -54,7 +54,7 @@
               </label>
               <label class="consent-label">
                 <input id="privacy-accepted" type="checkbox">
-                <span>Jeg har læst privatlivsinformationen og forstår, at mit valgte visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.</span>
+                <span>Jeg har læst privatlivsinformationen og forstår, at mit valgte visningsnavn, min profiltekst, mine gerninger og billeder ved gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.</span>
                 <a id="signup-privacy-link" href="./privacy.html" target="_blank" rel="noopener">Læs privatlivsinformationen</a>
               </label>
             </div>
@@ -146,6 +146,10 @@
                 <form id="activity-form">
                   <label for="activity-description">Hvad gjorde du?</label>
                   <textarea id="activity-description" name="description" maxlength="240" rows="3" placeholder="Fx Jeg cyklede på arbejde i stedet for at tage bilen…" required></textarea>
+                  <label class="photo-upload-label" for="activity-image">Billede (valgfrit)</label>
+                  <input id="activity-image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                  <p class="photo-upload-hint setting-hint">JPEG, PNG eller WebP · maks. 5 MB</p>
+                  <img id="activity-image-preview" class="activity-image-preview" alt="Forhåndsvisning af valgt billede" hidden>
                   <p class="privacy-reminder">Skriv ikke private eller følsomme oplysninger.</p>
                   <div class="form-bottom">
                     <span class="character-count" id="character-count">0 / 240</span>
@@ -277,7 +281,7 @@
               </form>
               <form id="public-profile-form" class="settings-form">
                 <h3>Offentlig profil</h3>
-                <p class="setting-hint">Andre indloggede brugere kan se dit valgte navn, din profiltekst og dine gerninger. Din e-mail forbliver privat og er ikke bekræftet.</p>
+                <p class="setting-hint">Andre indloggede brugere kan se dit valgte navn, din profiltekst, dine gerninger og billeder ved gerninger. Din e-mail forbliver privat og er ikke bekræftet.</p>
                 <label for="profile-display-name-mode">Navn, andre kan se</label>
                 <select id="profile-display-name-mode">
                   <option value="nickname">Mit kaldenavn</option>
@@ -291,7 +295,7 @@
                 <input id="profile-email" type="email" autocomplete="email" maxlength="254" required>
                 <label class="consent-label profile-public-consent">
                   <input id="profile-public-enabled" type="checkbox">
-                  <span>Jeg giver lov til, at mit visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere.</span>
+                  <span>Jeg giver lov til, at mit visningsnavn, min profiltekst, mine gerninger og billeder ved gerninger kan ses af andre indloggede brugere.</span>
                 </label>
                 <p class="setting-hint">Hvis du fjerner markeringen, skjules profilen, og den kan ikke findes i søgning eller pointtavle. Din e-mail vises aldrig offentligt.</p>
                 <button class="button button-secondary" type="submit">Gem profil</button>

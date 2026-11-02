@@ -21,6 +21,8 @@ const termsAcceptedInput = document.querySelector("#terms-accepted");
 const privacyAcceptedInput = document.querySelector("#privacy-accepted");
 const activityForm = document.querySelector("#activity-form");
 const descriptionInput = document.querySelector("#activity-description");
+const activityImageInput = document.querySelector("#activity-image");
+const activityImagePreview = document.querySelector("#activity-image-preview");
 const leaderboardList = document.querySelector("#leaderboard-list");
 const recentList = document.querySelector("#recent-list");
 const themeSetting = document.querySelector("#theme-setting");
@@ -53,6 +55,8 @@ const translations = {
     ".entry-panel .panel-heading .eyebrow": "DIN DAGBOG",
     ".entry-panel .panel-heading h2": "Tilføj en god gerning",
     ".entry-panel label": "Hvad gjorde du?",
+    ".photo-upload-label": "Billede (valgfrit)",
+    ".photo-upload-hint": "JPEG, PNG eller WebP · maks. 5 MB",
     "#activity-description": "Fx Jeg cyklede på arbejde i stedet for at tage bilen…",
     ".privacy-reminder": "Skriv ikke private eller følsomme oplysninger.",
     ".entry-panel .form-bottom .button": "Del min gerning",
@@ -120,14 +124,14 @@ const translations = {
     "#display-name-mode option[value='real_name']": "Mit eget navn",
     "#signup-real-name-field label": "Dit eget navn",
     "#terms-accepted + span": "Jeg accepterer vilkårene.",
-    "#privacy-accepted + span": "Jeg har læst privatlivsinformationen og forstår, at mit valgte visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.",
+    "#privacy-accepted + span": "Jeg har læst privatlivsinformationen og forstår, at mit visningsnavn, min profiltekst, mine gerninger og billeder ved gerninger kan ses af andre indloggede brugere, hvis min profil er offentlig.",
     "#signup-terms-link": "Læs vilkårene",
     "#signup-privacy-link": "Læs privatlivsinformationen",
     "#privacy-page-link": "Læs om privatliv og data",
     "#signup-details .field-hint": "E-mailen gemmes privat, er ikke bekræftet og bruges ikke til login. Den kan eventuelt bruges til 2FA senere.",
     ".auth-footnote": "E-mailen gemmes privat og bruges ikke til login. Husk din personlige kode — den kan ikke nulstilles.",
     "#public-profile-form h3": "Offentlig profil",
-    "#public-profile-form .setting-hint": "Andre indloggede brugere kan se dit valgte navn, din profiltekst og dine gerninger. Din e-mail forbliver privat og er ikke bekræftet.",
+    "#public-profile-form .setting-hint": "Andre indloggede brugere kan se dit valgte navn, din profiltekst, dine gerninger og billeder ved gerninger. Din e-mail forbliver privat og er ikke bekræftet.",
     "label[for='profile-display-name-mode']": "Navn, andre kan se",
     "#profile-display-name-mode option[value='nickname']": "Mit kaldenavn",
     "#profile-display-name-mode option[value='real_name']": "Mit eget navn",
@@ -136,7 +140,7 @@ const translations = {
     "#profile-bio": "Fortæl lidt om dig selv",
     "label[for='profile-email']": "E-mailadresse (privat)",
     "#public-profile-form button": "Gem profil",
-    "#public-profile-form .profile-public-consent span": "Jeg giver lov til, at mit visningsnavn, min profiltekst og mine gerninger kan ses af andre indloggede brugere.",
+    "#public-profile-form .profile-public-consent span": "Jeg giver lov til, at mit visningsnavn, min profiltekst, mine gerninger og billeder ved gerninger kan ses af andre indloggede brugere.",
     "#public-profile-form .profile-public-consent + .setting-hint": "Hvis du fjerner markeringen, skjules profilen, og den kan ikke findes i søgning eller pointtavle. Din e-mail vises aldrig offentligt.",
     ".footer > span:first-child": "En god gerning ad gangen.",
     ".footer > span:last-child": "Hverdagens app"
@@ -161,6 +165,8 @@ const translations = {
     ".entry-panel .panel-heading .eyebrow": "YOUR JOURNAL",
     ".entry-panel .panel-heading h2": "Add a good deed",
     ".entry-panel label": "What did you do?",
+    ".photo-upload-label": "Photo (optional)",
+    ".photo-upload-hint": "JPEG, PNG, or WebP · max 5 MB",
     "#activity-description": "E.g. I cycled to work instead of driving…",
     ".privacy-reminder": "Do not include private or sensitive information.",
     ".entry-panel .form-bottom .button": "Share my deed",
@@ -227,14 +233,14 @@ const translations = {
     "#display-name-mode option[value='real_name']": "My real name",
     "#signup-real-name-field label": "Your real name",
     "#terms-accepted + span": "I accept the terms.",
-    "#privacy-accepted + span": "I have read the privacy notice and understand that my selected display name, profile text, and deeds can be seen by other signed-in users if my profile is public.",
+    "#privacy-accepted + span": "I have read the privacy notice and understand that my display name, profile text, deeds, and photos attached to deeds can be seen by other signed-in users if my profile is public.",
     "#signup-terms-link": "Read the terms",
     "#signup-privacy-link": "Read the privacy notice",
     "#privacy-page-link": "Read about privacy and data",
     "#signup-details .field-hint": "Your email is stored privately, is not verified, and is not used to sign in. It may be used for 2FA later.",
     ".auth-footnote": "Your email is stored privately and is not used to sign in. Remember your passcode — it cannot be reset.",
     "#public-profile-form h3": "Public profile",
-    "#public-profile-form .setting-hint": "Other signed-in users can see your chosen name, profile text, and deeds. Your email stays private and is not verified.",
+    "#public-profile-form .setting-hint": "Other signed-in users can see your chosen name, profile text, deeds, and photos attached to deeds. Your email stays private and is not verified.",
     "label[for='profile-display-name-mode']": "Name others can see",
     "#profile-display-name-mode option[value='nickname']": "My nickname",
     "#profile-display-name-mode option[value='real_name']": "My real name",
@@ -243,7 +249,7 @@ const translations = {
     "#profile-bio": "Tell others a little about yourself",
     "label[for='profile-email']": "Email address (private)",
     "#public-profile-form button": "Save profile",
-    "#public-profile-form .profile-public-consent span": "I allow my display name, profile text, and deeds to be seen by other signed-in users.",
+    "#public-profile-form .profile-public-consent span": "I allow my display name, profile text, deeds, and photos attached to deeds to be seen by other signed-in users.",
     "#public-profile-form .profile-public-consent + .setting-hint": "When unchecked, your profile is hidden from search and the leaderboard. Your email is never public.",
     ".footer > span:first-child": "One good deed at a time.",
     ".footer > span:last-child": "Hverdagens app"
@@ -326,7 +332,7 @@ async function loadDashboard() {
     const [leaderboardResult, activityResult, profileResult] = await Promise.all([
       supabase.rpc("get_leaderboard"),
       supabase.from("activities")
-        .select("id, description, created_at")
+        .select("id, description, created_at, image_path")
         .eq("user_id", currentUser.id)
         .order("created_at", { ascending: false })
         .limit(1000),
@@ -338,7 +344,7 @@ async function loadDashboard() {
     currentProfile = profileResult.data;
     renderMyProfile(currentProfile);
     renderLeaderboard(leaderboardResult.data || []);
-    renderActivities(activityResult.data || []);
+    renderActivities(await addSignedImageUrls(activityResult.data || []));
   } catch (error) {
     displayError(error);
   }
@@ -445,7 +451,7 @@ async function openPublicProfile(userId) {
     if (!data.activities.length) {
       activities.append(emptyState(languageSetting.value === "en" ? "No deeds shared yet." : "Ingen gerninger delt endnu."));
     } else {
-      for (const activity of data.activities) {
+      for (const activity of await addSignedImageUrls(data.activities)) {
         const item = document.createElement("article");
         item.className = "recent-item";
         const copy = document.createElement("div");
@@ -453,10 +459,19 @@ async function openPublicProfile(userId) {
         const description = document.createElement("div");
         description.className = "activity-description";
         description.textContent = activity.description;
+        if (activity.image_url) {
+          const image = document.createElement("img");
+          image.className = "activity-photo";
+          image.src = activity.image_url;
+          image.alt = languageSetting.value === "en" ? "Photo of shared deed" : "Billede af delt gerning";
+          copy.append(description, image);
+        } else {
+          copy.append(description);
+        }
         const time = document.createElement("div");
         time.className = "activity-time";
         time.textContent = formatDate(activity.created_at);
-        copy.append(description, time);
+        copy.append(time);
         item.append(copy);
         activities.append(item);
       }
@@ -465,6 +480,21 @@ async function openPublicProfile(userId) {
   } catch (error) {
     displayError(error);
   }
+}
+
+async function addSignedImageUrls(activities) {
+  const imagePaths = activities.map((activity) => activity.image_path).filter(Boolean);
+  if (!imagePaths.length) return activities.map((activity) => ({ ...activity, image_url: null }));
+  const { data, error } = await supabase.storage.from("deed-images").createSignedUrls(imagePaths, 3600);
+  if (error) throw error;
+  const failedSignature = data.find((signedImage) => signedImage.error);
+  if (failedSignature) {
+    throw new Error(failedSignature.error.message || String(failedSignature.error));
+  }
+  return activities.map((activity) => {
+    const imageIndex = imagePaths.indexOf(activity.image_path);
+    return { ...activity, image_url: imageIndex < 0 ? null : data[imageIndex]?.signedUrl ?? null };
+  });
 }
 
 async function searchProfiles() {
@@ -528,10 +558,19 @@ function renderActivities(activities) {
     const description = document.createElement("div");
     description.className = "activity-description";
     description.textContent = activity.description;
+    if (activity.image_url) {
+      const image = document.createElement("img");
+      image.className = "activity-photo";
+      image.src = activity.image_url;
+      image.alt = languageSetting.value === "en" ? "Photo of shared deed" : "Billede af delt gerning";
+      copy.append(description, image);
+    } else {
+      copy.append(description);
+    }
     const time = document.createElement("div");
     time.className = "activity-time";
     time.textContent = formatDate(activity.created_at);
-    copy.append(description, time);
+    copy.append(time);
     const points = document.createElement("span");
     points.className = "activity-points";
     points.textContent = "+1 point";
@@ -540,13 +579,13 @@ function renderActivities(activities) {
     deleteButton.type = "button";
     deleteButton.textContent = languageSetting.value === "en" ? "Delete" : "Slet";
     deleteButton.setAttribute("aria-label", `${languageSetting.value === "en" ? "Delete deed" : "Slet gerning"}: ${activity.description}`);
-    deleteButton.addEventListener("click", () => deleteActivity(activity.id));
+    deleteButton.addEventListener("click", () => deleteActivity(activity.id, activity.image_path));
     item.append(icon, copy, points, deleteButton);
     recentList.append(item);
   }
 }
 
-async function deleteActivity(activityId) {
+async function deleteActivity(activityId, imagePath) {
   const message = languageSetting.value === "en"
     ? "Delete this deed? The point will be removed from your score."
     : "Slet denne gerning? Pointet bliver trukket fra din score.";
@@ -557,7 +596,18 @@ async function deleteActivity(activityId) {
       .eq("id", activityId)
       .eq("user_id", currentUser.id);
     if (error) throw error;
-    showNotice(languageSetting.value === "en" ? "Deed deleted." : "Gerningen er slettet.");
+    let imageCleanupFailed = false;
+    if (imagePath) {
+      const { error: imageError } = await supabase.storage.from("deed-images").remove([imagePath]);
+      if (imageError) {
+        imageCleanupFailed = true;
+      }
+    }
+    showNotice(imageCleanupFailed
+      ? (languageSetting.value === "en"
+        ? "Deed deleted, but its photo could not be removed."
+        : "Gerningen blev slettet, men billedet kunne ikke fjernes.")
+      : (languageSetting.value === "en" ? "Deed deleted." : "Gerningen er slettet."), imageCleanupFailed);
     await loadDashboard();
   } catch (error) {
     displayError(error);
@@ -650,16 +700,53 @@ authForm.addEventListener("submit", async (event) => {
 activityForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const description = descriptionInput.value.trim();
+  const imageFile = activityImageInput.files[0];
   if (!description || !currentUser) return;
+  if (imageFile && (!["image/jpeg", "image/png", "image/webp"].includes(imageFile.type) || imageFile.size > 5 * 1024 * 1024)) {
+    showNotice(languageSetting.value === "en"
+      ? "Choose a JPEG, PNG, or WebP image smaller than 5 MB."
+      : "Vælg et JPEG-, PNG- eller WebP-billede på under 5 MB.", true);
+    return;
+  }
   const submit = activityForm.querySelector('button[type="submit"]');
   submit.disabled = true;
   try {
-    const { error } = await supabase.from("activities").insert({
+    const { data: activity, error } = await supabase.from("activities").insert({
       user_id: currentUser.id,
       description
-    });
+    }).select("id").single();
     if (error) throw error;
+    if (imageFile) {
+      const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[imageFile.type];
+      const imagePath = `${currentUser.id}/${activity.id}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("deed-images").upload(imagePath, imageFile, {
+        contentType: imageFile.type,
+        upsert: false
+      });
+      if (uploadError) {
+        const { error: rollbackError } = await supabase.from("activities").delete().eq("id", activity.id).eq("user_id", currentUser.id);
+        if (rollbackError) throw new Error(`Billedet kunne ikke uploades, og gerningen kunne ikke rulles tilbage: ${rollbackError.message}`);
+        throw uploadError;
+      }
+      const { error: attachError } = await supabase.rpc("set_activity_image", {
+        requested_activity_id: activity.id,
+        requested_image_path: imagePath
+      });
+      if (attachError) {
+        const { error: cleanupError } = await supabase.storage.from("deed-images").remove([imagePath]);
+        const { error: rollbackError } = await supabase.from("activities").delete().eq("id", activity.id).eq("user_id", currentUser.id);
+        if (cleanupError || rollbackError) {
+          throw new Error(`Billedet kunne ikke knyttes til gerningen${cleanupError ? `; oprydning af billedet fejlede: ${cleanupError.message}` : ""}${rollbackError ? `; sletning af gerningen fejlede: ${rollbackError.message}` : ""}`);
+        }
+        throw attachError;
+      }
+    }
     descriptionInput.value = "";
+    activityImageInput.value = "";
+    if (activityImagePreview.dataset.objectUrl) URL.revokeObjectURL(activityImagePreview.dataset.objectUrl);
+    activityImagePreview.removeAttribute("src");
+    activityImagePreview.dataset.objectUrl = "";
+    activityImagePreview.hidden = true;
     document.querySelector("#character-count").textContent = "0 / 240";
     showNotice("Din gode gerning er delt. Tak fordi du gør en forskel!");
     await loadDashboard();
@@ -668,6 +755,26 @@ activityForm.addEventListener("submit", async (event) => {
   } finally {
     submit.disabled = false;
   }
+});
+
+activityImageInput.addEventListener("change", () => {
+  const [file] = activityImageInput.files;
+  if (activityImagePreview.dataset.objectUrl) URL.revokeObjectURL(activityImagePreview.dataset.objectUrl);
+  activityImagePreview.dataset.objectUrl = "";
+  activityImagePreview.hidden = true;
+  activityImagePreview.removeAttribute("src");
+  if (!file) return;
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+    activityImageInput.value = "";
+    showNotice(languageSetting.value === "en"
+      ? "Choose a JPEG, PNG, or WebP image smaller than 5 MB."
+      : "Vælg et JPEG-, PNG- eller WebP-billede på under 5 MB.", true);
+    return;
+  }
+  const objectUrl = URL.createObjectURL(file);
+  activityImagePreview.src = objectUrl;
+  activityImagePreview.dataset.objectUrl = objectUrl;
+  activityImagePreview.hidden = false;
 });
 
 descriptionInput.addEventListener("input", () => {
@@ -739,13 +846,23 @@ document.querySelector("#export-data").addEventListener("click", async (event) =
 
 document.querySelector("#delete-account").addEventListener("click", async (event) => {
   const confirmation = languageSetting.value === "en"
-    ? window.prompt("This permanently deletes your profile and deeds. Type DELETE to continue.")
-    : window.prompt("Dette sletter din profil og dine gerninger permanent. Skriv SLET for at fortsætte.");
+    ? window.prompt("This permanently deletes your profile, deeds, and attached photos. Type DELETE to continue.")
+    : window.prompt("Dette sletter din profil, dine gerninger og tilknyttede billeder permanent. Skriv SLET for at fortsætte.");
   if (confirmation !== (languageSetting.value === "en" ? "DELETE" : "SLET")) return;
 
   const button = event.currentTarget;
   button.disabled = true;
   try {
+    const { data: activities, error: activitiesError } = await supabase.from("activities")
+      .select("image_path")
+      .eq("user_id", currentUser.id)
+      .not("image_path", "is", null);
+    if (activitiesError) throw activitiesError;
+    const imagePaths = activities.map((activity) => activity.image_path);
+    if (imagePaths.length) {
+      const { error: imageError } = await supabase.storage.from("deed-images").remove(imagePaths);
+      if (imageError) throw imageError;
+    }
     const { error } = await supabase.rpc("delete_my_account");
     if (error) throw error;
     await supabase.auth.signOut({ scope: "local" });
@@ -770,6 +887,9 @@ function applyPreferences() {
     preferences.language === "en" ? "en" : "da-DK",
     { weekday: "long", day: "numeric", month: "long" },
   ).format(new Date());
+  activityImagePreview.alt = preferences.language === "en"
+    ? "Selected photo preview"
+    : "Forhåndsvisning af valgt billede";
   for (const [selector, text] of Object.entries(translations[preferences.language])) {
     const element = document.querySelector(selector);
     if (!element) continue;
