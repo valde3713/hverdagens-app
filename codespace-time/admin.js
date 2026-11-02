@@ -101,6 +101,15 @@ function renderDashboard(data, currentUserId) {
       editButton.dataset.nickname = profile.nickname;
       editButton.textContent = "Rediger";
       actionGroup.append(editButton);
+      if (data.current_role === "owner" && profile.admin_role === "admin") {
+        const removeAdminButton = document.createElement("button");
+        removeAdminButton.type = "button";
+        removeAdminButton.className = "button button-danger";
+        removeAdminButton.dataset.action = "remove-admin";
+        removeAdminButton.dataset.nickname = profile.nickname;
+        removeAdminButton.textContent = "Fjern admin";
+        actionGroup.append(removeAdminButton);
+      }
       if (profile.user_id !== currentUserId && !profile.is_admin) {
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -252,6 +261,23 @@ document.querySelector("#admin-profiles").addEventListener("click", async (event
   const button = event.target.closest("button[data-action]");
   if (!button) return;
   const nickname = button.dataset.nickname;
+  if (button.dataset.action === "remove-admin") {
+    if (!window.confirm(`Fjern admin-adgangen for "${nickname}"? Kontoen og dens data slettes ikke.`)) return;
+    button.disabled = true;
+    try {
+      await runAdminAction(
+        "admin_remove_user",
+        { requested_nickname: nickname },
+        `Admin-adgangen for "${nickname}" er fjernet.`,
+      );
+    } catch (error) {
+      showError(dashboardMessage, error.message || "Admin-adgangen kunne ikke fjernes.");
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
   if (button.dataset.action === "delete-profile") {
     if (!window.confirm(`Slet profilen "${nickname}" og alle dens gerninger? Dette kan ikke fortrydes.`)) return;
     button.disabled = true;

@@ -114,6 +114,11 @@ begin
             from public.admin_users as admin_profile
             where admin_profile.user_id = p.id
           ),
+          'admin_role', (
+            select admin_profile.role
+            from public.admin_users as admin_profile
+            where admin_profile.user_id = p.id
+          ),
           'display_name', case
             when p.display_name_mode = 'real_name' and private.real_name is not null
               then private.real_name
@@ -350,6 +355,56 @@ begin
 end;
 $$;
 
+create or replace function public.admin_remove_user(
+  requested_code text,
+  requested_nickname text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  profile_id uuid;
+begin
+  if not public.verify_admin_access(requested_code) then
+    return jsonb_build_object('error', 'Admin-koden er forkert, ikke sat op, eller adgangen er låst.');
+  end if;
+
+  if not exists (
+    select 1
+    from public.admin_users as admins
+    where admins.user_id = auth.uid()
+      and admins.role = 'owner'
+  ) then
+    return jsonb_build_object('error', 'Kun Owner kan fjerne admin-adgang.');
+  end if;
+
+  select p.id
+  into profile_id
+  from public.profiles as p
+  where lower(p.nickname) = lower(trim(requested_nickname));
+
+  if profile_id is null then
+    return jsonb_build_object('error', 'Profilen findes ikke længere.');
+  end if;
+
+  if profile_id = auth.uid() then
+    return jsonb_build_object('error', 'Owner-adgangen kan ikke fjernes her.');
+  end if;
+
+  delete from public.admin_users
+  where user_id = profile_id
+    and role = 'admin';
+
+  if not found then
+    return jsonb_build_object('error', 'Kontoen er ikke en admin.');
+  end if;
+
+  return jsonb_build_object('removed', true);
+end;
+$$;
+
 create or replace function public.get_my_profile()
 returns jsonb
 language sql
@@ -422,12 +477,14 @@ revoke all on function public.admin_update_profile(text, text, text, text, text,
 revoke all on function public.admin_delete_activity(text, uuid) from public, anon;
 revoke all on function public.admin_delete_profile(text, text) from public, anon;
 revoke all on function public.admin_add_user(text, text) from public, anon;
+revoke all on function public.admin_remove_user(text, text) from public, anon;
 revoke all on function public.change_profile_nickname(text) from public, anon;
 grant execute on function public.get_admin_dashboard(text) to authenticated;
 grant execute on function public.admin_update_profile(text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_delete_activity(text, uuid) to authenticated;
 grant execute on function public.admin_delete_profile(text, text) to authenticated;
 grant execute on function public.admin_add_user(text, text) to authenticated;
+grant execute on function public.admin_remove_user(text, text) to authenticated;
 grant execute on function public.change_profile_nickname(text) to authenticated;
 grant execute on function public.get_my_profile() to authenticated;
 
