@@ -57,7 +57,7 @@ Mobilappen bruger Capacitor til at pakke den samme app til Android og iOS. `conf
    npm run mobile:sync
    ```
 
-4. Android: Åbn `android/` i Android Studio, eller byg en debug-APK med `cd android && ./gradlew assembleDebug`. APK'en ligger i `android/app/build/outputs/apk/debug/`.
+4. Android: Åbn `android/` i Android Studio, eller byg en debug-APK med `cd android && ./gradlew assembleDebug`. APK'en bruger bladlogoet fra appens launcher-ikon og ligger i `android/app/build/outputs/apk/debug/`.
 5. iOS: På en Mac, kør `npx cap open ios`, vælg et signing team i Xcode, og byg/arkivér appen der. En IPA til installation/distribution kræver Apples signering og en Apple-udviklerkonto. IPA kan ikke bygges eller signeres på Linux.
 
 ## Kør lokalt
