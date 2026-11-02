@@ -763,6 +763,10 @@ function applyPreferences() {
   localStorage.setItem("hverdagens-app-preferences", JSON.stringify(preferences));
   document.documentElement.dataset.theme = preferences.theme;
   document.documentElement.lang = preferences.language;
+  document.querySelector("#today-label").textContent = new Intl.DateTimeFormat(
+    preferences.language === "en" ? "en" : "da-DK",
+    { weekday: "long", day: "numeric", month: "long" },
+  ).format(new Date());
   for (const [selector, text] of Object.entries(translations[preferences.language])) {
     const element = document.querySelector(selector);
     if (!element) continue;
