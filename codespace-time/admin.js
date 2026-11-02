@@ -298,6 +298,8 @@ document.querySelector("#admin-profiles").addEventListener("click", async (event
   if (button.dataset.action === "edit-profile") {
     const profile = lastDashboard?.profiles.find((item) => item.nickname === nickname);
     if (!profile) return;
+    const newNickname = window.prompt("Kaldenavn (3–20 bogstaver, tal eller _):", profile.nickname);
+    if (newNickname === null) return;
     const displayNameMode = window.prompt(
       "Skriv nickname eller real_name for det offentlige navn:",
       profile.display_name_mode,
@@ -325,6 +327,7 @@ document.querySelector("#admin-profiles").addEventListener("click", async (event
         "admin_update_profile",
         {
           requested_nickname: nickname,
+          requested_new_nickname: newNickname.trim(),
           requested_display_name_mode: displayNameMode.trim(),
           requested_real_name: realName,
           requested_bio: bio,

@@ -80,6 +80,7 @@ const translations = {
     "#profile-page .page-heading h1": "Min profil",
     "#profile-page .page-heading .page-subtitle": "Dit offentlige navn og dine grønne gerninger.",
     "#profile-page .profile-panel .eyebrow": "OFFENTLIGT NAVN",
+    "#nickname-lock-message": "Du kan ændre kaldenavn, når du har delt mindst 35 gerninger.",
     ".profile-stats > .eyebrow": "DIT BIDRAG TIL NATUREN",
     ".profile-stats p:not(.eyebrow)": "delte gode gerninger",
     "#profile-signout": "Log ud",
@@ -187,6 +188,7 @@ const translations = {
     "#profile-page .page-heading h1": "My profile",
     "#profile-page .page-heading .page-subtitle": "Your public name and green deeds.",
     "#profile-page .profile-panel .eyebrow": "PUBLIC NAME",
+    "#nickname-lock-message": "You can change your nickname after sharing at least 35 deeds.",
     ".profile-stats > .eyebrow": "YOUR CONTRIBUTION TO NATURE",
     ".profile-stats p:not(.eyebrow)": "good deeds shared",
     "#profile-signout": "Log out",
@@ -374,6 +376,7 @@ function renderLeaderboard(rows) {
   const score = myRow ? Number(myRow.points) : 0;
   document.querySelector("#my-score").textContent = String(score);
   document.querySelector("#profile-score").textContent = String(score);
+  updateNicknameAvailability(score);
   document.querySelector("#my-rank").textContent = rank < 0 ? "–" : `#${rank + 1}`;
   leaderboardList.replaceChildren();
   if (sorted.length === 0) {
@@ -405,6 +408,19 @@ function renderLeaderboard(rows) {
     item.append(position, identity, points);
     leaderboardList.append(item);
   });
+}
+
+function updateNicknameAvailability(score) {
+  const locked = score < 35;
+  document.querySelector("#new-nickname").disabled = locked;
+  document.querySelector("#nickname-submit").disabled = locked;
+  document.querySelector("#nickname-lock-message").textContent = locked
+    ? (languageSetting.value === "en"
+      ? `You need 35 deeds to change your nickname. You have ${score}.`
+      : `Du skal have delt 35 gerninger for at ændre kaldenavn. Du har delt ${score}.`)
+    : (languageSetting.value === "en"
+      ? "You can change your nickname."
+      : "Du kan ændre dit kaldenavn.");
 }
 
 async function openPublicProfile(userId) {
@@ -794,6 +810,7 @@ function applyPreferences() {
       english ? "No profile text yet." : "Ingen profiltekst endnu."
     );
   }
+  updateNicknameAvailability(Number(document.querySelector("#profile-score").textContent));
   if (currentUser) loadDashboard();
 }
 

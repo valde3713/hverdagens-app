@@ -162,9 +162,12 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_update_profile(text, text, text, text, text, boolean);
+
 create or replace function public.admin_update_profile(
   requested_code text,
   requested_nickname text,
+  requested_new_nickname text,
   requested_display_name_mode text,
   requested_real_name text,
   requested_bio text,
@@ -177,11 +180,16 @@ set search_path = ''
 as $$
 declare
   normalized_name text := nullif(trim(requested_real_name), '');
+  normalized_nickname text := trim(requested_new_nickname);
   normalized_bio text := trim(coalesce(requested_bio, ''));
   profile_id uuid;
 begin
   if not public.verify_admin_access(requested_code) then
     return jsonb_build_object('error', 'Admin-koden er forkert, ikke sat op, eller adgangen er låst.');
+  end if;
+  if normalized_nickname is null
+     or normalized_nickname !~ '^[A-Za-z0-9_]{3,20}$' then
+    return jsonb_build_object('error', 'Kaldenavn skal være 3–20 bogstaver, tal eller _ .');
   end if;
   if requested_display_name_mode not in ('nickname', 'real_name') then
     return jsonb_build_object('error', 'Vælg et gyldigt visningsnavn.');
@@ -201,7 +209,8 @@ begin
   end if;
 
   update public.profiles
-  set display_name_mode = requested_display_name_mode,
+  set nickname = normalized_nickname,
+      display_name_mode = requested_display_name_mode,
       bio = normalized_bio
   where lower(nickname) = lower(trim(requested_nickname))
   returning id into profile_id;
@@ -209,6 +218,13 @@ begin
   if profile_id is null then
     return jsonb_build_object('error', 'Profilen findes ikke længere.');
   end if;
+
+  update auth.users
+  set email = lower(normalized_nickname) || '@users.hverdagens.invalid',
+      raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+        || jsonb_build_object('nickname', normalized_nickname),
+      updated_at = now()
+  where id = profile_id;
 
   insert into public.profile_private as existing_profile (
     user_id,
@@ -445,6 +461,7 @@ as $$
 declare
   current_user_id uuid := auth.uid();
   normalized_nickname text := trim(new_nickname);
+  deed_count bigint;
 begin
   if current_user_id is null then
     raise exception 'You must be signed in to change your nickname.';
@@ -453,6 +470,14 @@ begin
   if normalized_nickname is null
      or normalized_nickname !~ '^[A-Za-z0-9_]{3,20}$' then
     raise exception 'Nickname must be 3–20 letters, numbers, or underscores.';
+  end if;
+
+  select count(*) into deed_count
+  from public.activities
+  where user_id = current_user_id;
+
+  if deed_count < 35 then
+    raise exception 'Share at least 35 good deeds before changing your nickname.';
   end if;
 
   update public.profiles
@@ -473,14 +498,14 @@ end;
 $$;
 
 revoke all on function public.get_admin_dashboard(text) from public, anon;
-revoke all on function public.admin_update_profile(text, text, text, text, text, boolean) from public, anon;
+revoke all on function public.admin_update_profile(text, text, text, text, text, text, boolean) from public, anon;
 revoke all on function public.admin_delete_activity(text, uuid) from public, anon;
 revoke all on function public.admin_delete_profile(text, text) from public, anon;
 revoke all on function public.admin_add_user(text, text) from public, anon;
 revoke all on function public.admin_remove_user(text, text) from public, anon;
 revoke all on function public.change_profile_nickname(text) from public, anon;
 grant execute on function public.get_admin_dashboard(text) to authenticated;
-grant execute on function public.admin_update_profile(text, text, text, text, text, boolean) to authenticated;
+grant execute on function public.admin_update_profile(text, text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_delete_activity(text, uuid) to authenticated;
 grant execute on function public.admin_delete_profile(text, text) to authenticated;
 grant execute on function public.admin_add_user(text, text) to authenticated;
