@@ -146,8 +146,13 @@
                 <form id="activity-form">
                   <label for="activity-description">Hvad gjorde du?</label>
                   <textarea id="activity-description" name="description" maxlength="240" rows="3" placeholder="Fx Jeg cyklede på arbejde i stedet for at tage bilen…" required></textarea>
-                  <label class="photo-upload-label" for="activity-image">Billede (valgfrit)</label>
-                  <input id="activity-image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                  <p class="photo-upload-label">Tilføj et billede (valgfrit)</p>
+                  <div class="photo-upload-actions">
+                    <button id="activity-camera-button" class="photo-action-button photo-camera-button" type="button"><span aria-hidden="true">📷</span> Tag et billede</button>
+                    <button id="activity-gallery-button" class="photo-action-button" type="button"><span aria-hidden="true">▧</span> Vælg fra billeder</button>
+                  </div>
+                  <input id="activity-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                  <input id="activity-camera-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
                   <p class="photo-upload-hint setting-hint">JPEG, PNG eller WebP · maks. 5 MB</p>
                   <img id="activity-image-preview" class="activity-image-preview" alt="Forhåndsvisning af valgt billede" hidden>
                   <p class="privacy-reminder">Skriv ikke private eller følsomme oplysninger.</p>

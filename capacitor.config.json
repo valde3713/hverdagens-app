@@ -3,6 +3,7 @@
   "appName": "Hverdagens app",
   "webDir": "native/www",
   "server": {
+    "url": "https://valde3713.github.io/hverdagens-app/",
     "androidScheme": "https"
   }
 }

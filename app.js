@@ -22,7 +22,9 @@ const privacyAcceptedInput = document.querySelector("#privacy-accepted");
 const activityForm = document.querySelector("#activity-form");
 const descriptionInput = document.querySelector("#activity-description");
 const activityImageInput = document.querySelector("#activity-image");
+const activityCameraInput = document.querySelector("#activity-camera-input");
 const activityImagePreview = document.querySelector("#activity-image-preview");
+let selectedActivityImage;
 const leaderboardList = document.querySelector("#leaderboard-list");
 const recentList = document.querySelector("#recent-list");
 const themeSetting = document.querySelector("#theme-setting");
@@ -55,7 +57,9 @@ const translations = {
     ".entry-panel .panel-heading .eyebrow": "DIN DAGBOG",
     ".entry-panel .panel-heading h2": "Tilføj en god gerning",
     ".entry-panel label": "Hvad gjorde du?",
-    ".photo-upload-label": "Billede (valgfrit)",
+    ".photo-upload-label": "Tilføj et billede (valgfrit)",
+    "#activity-camera-button": "Tag et billede",
+    "#activity-gallery-button": "Vælg fra billeder",
     ".photo-upload-hint": "JPEG, PNG eller WebP · maks. 5 MB",
     "#activity-description": "Fx Jeg cyklede på arbejde i stedet for at tage bilen…",
     ".privacy-reminder": "Skriv ikke private eller følsomme oplysninger.",
@@ -165,7 +169,9 @@ const translations = {
     ".entry-panel .panel-heading .eyebrow": "YOUR JOURNAL",
     ".entry-panel .panel-heading h2": "Add a good deed",
     ".entry-panel label": "What did you do?",
-    ".photo-upload-label": "Photo (optional)",
+    ".photo-upload-label": "Add a photo (optional)",
+    "#activity-camera-button": "Take a photo",
+    "#activity-gallery-button": "Choose a photo",
     ".photo-upload-hint": "JPEG, PNG, or WebP · max 5 MB",
     "#activity-description": "E.g. I cycled to work instead of driving…",
     ".privacy-reminder": "Do not include private or sensitive information.",
@@ -700,7 +706,7 @@ authForm.addEventListener("submit", async (event) => {
 activityForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const description = descriptionInput.value.trim();
-  const imageFile = activityImageInput.files[0];
+  const imageFile = selectedActivityImage;
   if (!description || !currentUser) return;
   if (imageFile && (!["image/jpeg", "image/png", "image/webp"].includes(imageFile.type) || imageFile.size > 5 * 1024 * 1024)) {
     showNotice(languageSetting.value === "en"
@@ -743,6 +749,8 @@ activityForm.addEventListener("submit", async (event) => {
     }
     descriptionInput.value = "";
     activityImageInput.value = "";
+    activityCameraInput.value = "";
+    selectedActivityImage = undefined;
     if (activityImagePreview.dataset.objectUrl) URL.revokeObjectURL(activityImagePreview.dataset.objectUrl);
     activityImagePreview.removeAttribute("src");
     activityImagePreview.dataset.objectUrl = "";
@@ -757,25 +765,34 @@ activityForm.addEventListener("submit", async (event) => {
   }
 });
 
-activityImageInput.addEventListener("change", () => {
-  const [file] = activityImageInput.files;
+document.querySelector("#activity-camera-button").addEventListener("click", () => activityCameraInput.click());
+document.querySelector("#activity-gallery-button").addEventListener("click", () => activityImageInput.click());
+
+function handleActivityImageSelection(input) {
+  const [file] = input.files;
+  if (!file) return;
   if (activityImagePreview.dataset.objectUrl) URL.revokeObjectURL(activityImagePreview.dataset.objectUrl);
   activityImagePreview.dataset.objectUrl = "";
   activityImagePreview.hidden = true;
   activityImagePreview.removeAttribute("src");
-  if (!file) return;
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
-    activityImageInput.value = "";
+    input.value = "";
+    selectedActivityImage = undefined;
     showNotice(languageSetting.value === "en"
       ? "Choose a JPEG, PNG, or WebP image smaller than 5 MB."
       : "Vælg et JPEG-, PNG- eller WebP-billede på under 5 MB.", true);
     return;
   }
+  selectedActivityImage = file;
+  input.value = "";
   const objectUrl = URL.createObjectURL(file);
   activityImagePreview.src = objectUrl;
   activityImagePreview.dataset.objectUrl = objectUrl;
   activityImagePreview.hidden = false;
-});
+}
+
+activityImageInput.addEventListener("change", () => handleActivityImageSelection(activityImageInput));
+activityCameraInput.addEventListener("change", () => handleActivityImageSelection(activityCameraInput));
 
 descriptionInput.addEventListener("input", () => {
   document.querySelector("#character-count").textContent = `${descriptionInput.value.length} / 240`;
