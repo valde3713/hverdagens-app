@@ -1,8 +1,12 @@
 {
   "name": "hverdagens-app",
   "version": "1.0.0",
+  "description": "Hverdagens app til Windows",
+  "author": "Hverdagens app",
   "private": true,
+  "main": "desktop/main.cjs",
   "scripts": {
+    "desktop:build": "electron-builder --win portable",
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
     "mobile:sync": "npm run mobile:prepare && cap sync"
   },
@@ -13,6 +17,22 @@
     "@capacitor/ios": "8.5.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.5.3"
+    "@capacitor/cli": "8.5.3",
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "dk.valde3713.hverdagensapp",
+    "productName": "Hverdagens app",
+    "asar": true,
+    "files": [
+      "desktop/main.cjs",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "hverdagens-app.exe",
+      "signAndEditExecutable": false
+    }
   }
 }
