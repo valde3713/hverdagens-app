@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f5f7ef">
-    <meta name="description" content="Download Hverdagens app til Android og iOS.">
+    <meta name="description" content="Download Hverdagens app til Windows, Android og iOS.">
     <title>Download appen — Hverdagens app</title>
     <!-- PWA meta-tags så iPhonen ved den kan køre i fuld skærm efter godkendelse -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,6 +49,14 @@
           <p class="download-note">Dette er en testversion, ikke fra Google Play. Android kan bede dig om at tillade installation fra denne kilde.</p>
         </div>
 
+        <div id="windows-section" style="display: none;">
+          <p class="eyebrow" style="margin-top: 34px">WINDOWS</p>
+          <h1>Hent appen</h1>
+          <p>Download Hverdagens app til din Windows-computer. Åbn filen, når download er færdig. Appen kræver internetforbindelse.</p>
+          <a class="button button-primary button-wide" href="https://github.com/valde3713/hverdagens-app/releases/download/windows-1.0.0/hverdagens-app.exe">Download til Windows <span aria-hidden="true">↓</span></a>
+          <p class="download-note">Windows kan vise en SmartScreen-advarsel, fordi appen ikke er digitalt signeret.</p>
+        </div>
+
         <!-- IOS / IPHONE SEKTION -->
         <div id="ios-section" style="display: none;">
           <p class="eyebrow" style="margin-top: 34px">APPLE / IOS</p>
@@ -70,14 +78,13 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function() {
-        // Tjekker om enheden er en iPhone, iPad eller iPod
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
-        if (isIOS) {
-          // Hvis det er iOS, skiftes sektionen ud med det samme
-          document.getElementById("android-section").style.display = "none";
-          document.getElementById("ios-section").style.display = "block";
-        }
+        const userAgent = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        const isAndroid = /Android/i.test(userAgent);
+
+        document.getElementById("android-section").style.display = isAndroid ? "block" : "none";
+        document.getElementById("windows-section").style.display = !isAndroid && !isIOS ? "block" : "none";
+        document.getElementById("ios-section").style.display = isIOS ? "block" : "none";
       });
     </script>
   </body>
