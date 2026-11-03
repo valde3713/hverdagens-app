@@ -32,6 +32,7 @@
     "win": {
       "target": "portable",
       "artifactName": "hverdagens-app.exe",
+      "icon": "desktop/icon.ico",
       "signAndEditExecutable": false
     }
   }
