@@ -62,14 +62,14 @@ Mobilappen bruger Capacitor til at pakke den samme app til Android og iOS. `conf
 
 ## Windows-app
 
-Windows-udgaven er en bærbar `.exe`, som ikke skal installeres. Den åbner appen fra GitHub Pages og kræver internetforbindelse. Byg den med Node.js 22 eller nyere:
+Windows-udgaven er en `.exe`-installationsfil, som opretter genveje i Start-menuen og på skrivebordet. Installér den én gang, så appen starter direkte i stedet for at pakke sig selv ud ved hver start. Appindholdet hentes fra GitHub Pages, så internetforbindelse kræves. Byg installationsfilen på Windows med Node.js 22 eller nyere:
 
 ```sh
 npm install
 npm run desktop:build
 ```
 
-Filen oprettes som `dist/hverdagens-app.exe`. Den er ikke digitalt signeret; Windows kan vise en SmartScreen-advarsel ved første start.
+Installationsfilen oprettes som `dist/hverdagens-app-setup.exe`. Den er ikke digitalt signeret; Windows kan vise en SmartScreen-advarsel ved første start.
 
 ## Kør lokalt
 

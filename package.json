@@ -6,7 +6,7 @@
   "private": true,
   "main": "desktop/main.cjs",
   "scripts": {
-    "desktop:build": "electron-builder --win portable",
+    "desktop:build": "electron-builder --win nsis",
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
     "mobile:sync": "npm run mobile:prepare && cap sync"
   },
@@ -27,13 +27,22 @@
     "asar": true,
     "files": [
       "desktop/main.cjs",
+      "desktop/preload.cjs",
+      "desktop/loading.html",
+      "desktop/icon.png",
       "package.json"
     ],
     "win": {
-      "target": "portable",
-      "artifactName": "hverdagens-app.exe",
-      "icon": "desktop/icon.ico",
-      "signAndEditExecutable": false
+      "target": "nsis",
+      "artifactName": "hverdagens-app-setup.exe",
+      "icon": "desktop/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
     }
   }
 }

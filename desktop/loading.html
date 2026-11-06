@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hverdagens app</title>
+    <style>
+      :root { color-scheme: light; font-family: "Segoe UI", sans-serif; color: #23392d; background: #f5f7ef; }
+      * { box-sizing: border-box; }
+      body { display: grid; min-height: 100vh; margin: 0; place-items: center; }
+      main { width: 100%; padding: 38px; text-align: center; }
+      .logo { width: 64px; height: 64px; }
+      h1 { margin: 18px 0 8px; font-size: 23px; font-weight: 650; }
+      p { margin: 0; color: #68796e; font-size: 14px; line-height: 1.6; }
+      .spinner { width: 24px; height: 24px; margin: 22px auto 0; border: 3px solid #dfe8de; border-top-color: #315e45; border-radius: 50%; animation: spin .8s linear infinite; }
+      button { margin-top: 20px; padding: 11px 22px; border: 0; border-radius: 9px; background: #315e45; color: white; font: inherit; font-weight: 600; cursor: pointer; }
+      [hidden] { display: none !important; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img class="logo" src="icon.png" alt="">
+      <h1>Hverdagens app</h1>
+      <p id="status">Starter appen …</p>
+      <div id="spinner" class="spinner" aria-label="Indlæser"></div>
+      <div id="error" hidden>
+        <p>Appen kunne ikke hente indholdet. Kontrollér din internetforbindelse, og prøv igen.</p>
+        <button id="retry" type="button">Prøv igen</button>
+      </div>
+    </main>
+    <script>
+      const status = document.querySelector("#status");
+      const spinner = document.querySelector("#spinner");
+      const error = document.querySelector("#error");
+      window.startup.onState((state) => {
+        const failed = state === "error";
+        status.hidden = failed;
+        spinner.hidden = failed;
+        error.hidden = !failed;
+        if (!failed) status.textContent = "Henter appen …";
+      });
+      document.querySelector("#retry").addEventListener("click", () => window.startup.retry());
+    </script>
+  </body>
+</html>
