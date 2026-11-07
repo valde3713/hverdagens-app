@@ -41,7 +41,7 @@ function renderRows(container, rows, emptyMessage, renderRow) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.className = "admin-muted";
-    cell.colSpan = container.id === "admin-profiles" ? 8 : 4;
+    cell.colSpan = Number(container.dataset.columns) || (container.id === "admin-profiles" ? 8 : 4);
     cell.textContent = emptyMessage;
     row.append(cell);
     container.append(row);
@@ -153,14 +153,64 @@ async function loadDashboard() {
   if (!Array.isArray(data?.profiles) || !Array.isArray(data?.activities)) {
     throw new Error("Serveren returnerede et ugyldigt dashboard-svar.");
   }
+  if (data.current_role !== "owner" && data.current_role !== "admin") {
+    throw new Error("Admin-databasen er ikke opdateret. Kør supabase-admin-management.sql igen efter supabase.sql.");
+  }
   const { data: { user }, error: userError } = await client.auth.getUser();
   if (userError) throw userError;
   renderDashboard(data, user.id);
-  document.querySelector("#admin-user-management").hidden = data.current_role !== "owner";
+  const userManagement = document.querySelector("#admin-user-management");
+  userManagement.hidden = data.current_role !== "owner";
+  if (data.current_role === "admin") {
+    showError(dashboardMessage, "Kun Owner kan tilføje eller fjerne admin-konti.");
+  } else {
+    dashboardMessage.textContent = "";
+    delete dashboardMessage.dataset.state;
+  }
   dashboard.hidden = false;
   loginScreen.hidden = true;
   actions.hidden = false;
   document.querySelector("#admin-identity").textContent = "Admin";
+  await loadPointManagement();
+}
+
+async function loadPointManagement() {
+  const accessCode = document.querySelector("#admin-access-code").value;
+  const { data, error } = await client.rpc("get_point_management_data", {
+    requested_code: accessCode,
+  });
+  if (error) throw error;
+  if (typeof data?.error === "string") throw new Error(data.error);
+  if (!Array.isArray(data?.profiles) || !Array.isArray(data.entries)) {
+    throw new Error("Serveren returnerede ugyldige pointdata.");
+  }
+
+  const profileSelect = document.querySelector("#point-user");
+  const selectedUser = profileSelect.value;
+  profileSelect.replaceChildren();
+  for (const profile of data.profiles) {
+    const option = document.createElement("option");
+    option.value = profile.nickname;
+    option.textContent = `${profile.nickname} (${profile.points} point)`;
+    profileSelect.append(option);
+  }
+  if (data.profiles.some((profile) => profile.nickname === selectedUser)) {
+    profileSelect.value = selectedUser;
+  }
+
+  renderRows(
+    document.querySelector("#point-entries"),
+    data.entries,
+    "Der er ikke registreret point endnu.",
+    (row, entry) => {
+      addCell(row, entry.nickname || "Slettet konto");
+      const points = Number(entry.points);
+      addCell(row, `${points > 0 ? "+" : ""}${points}`);
+      addCell(row, entry.source === "local_ai" || entry.source === "ai" ? "Lokal AI" : entry.source === "legacy" ? "Tidligere gerning" : "Admin-justering");
+      addCell(row, entry.reason);
+      addCell(row, formatDate(entry.created_at));
+    },
+  );
 }
 
 async function runAdminAction(functionName, parameters, successMessage) {
@@ -252,6 +302,34 @@ document.querySelector("#admin-add-form").addEventListener("submit", async (even
     form.reset();
   } catch (error) {
     showError(dashboardMessage, error.message || "Admin-adgang kunne ikke tilføjes.");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#point-adjust-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector("button[type='submit']");
+  const amount = Number(document.querySelector("#point-adjustment").value);
+  if (!amount) {
+    showError(dashboardMessage, "En pointjustering må ikke være 0.");
+    return;
+  }
+  button.disabled = true;
+  try {
+    await runAdminAction(
+      "admin_adjust_points",
+      {
+        requested_nickname: document.querySelector("#point-user").value,
+        requested_points: amount,
+        requested_reason: document.querySelector("#point-adjustment-reason").value,
+      },
+      "Pointjusteringen er føjet til historikken.",
+    );
+    form.reset();
+  } catch (error) {
+    showError(dashboardMessage, error.message || "Pointene kunne ikke justeres.");
   } finally {
     button.disabled = false;
   }

@@ -39,6 +39,11 @@
       .admin-add-form { display: flex; align-items: end; gap: 12px; max-width: 560px; }
       .admin-add-form label { display: block; margin-bottom: 6px; color: var(--green-dark); font-size: 12px; font-weight: 600; }
       .admin-add-form input { width: min(280px, 100%); }
+      .point-form { display: grid; gap: 12px; max-width: 720px; }
+      .point-form label { display: block; margin-bottom: 6px; color: var(--green-dark); font-size: 12px; font-weight: 600; }
+      .point-form input, .point-form select, .point-form textarea { width: 100%; }
+      .point-rule-range { display: grid; grid-template-columns: repeat(2, minmax(110px, 180px)); gap: 12px; }
+      .point-form textarea { min-height: 100px; resize: vertical; }
       .button-danger { background: #f8e9e6; color: #914c3c; }
       .button-danger:hover { background: #f2d8d2; }
       .admin-privacy { margin-top: 18px; color: #758379; font-size: 11px; line-height: 1.7; }
@@ -113,6 +118,25 @@
             </div>
             <button class="button button-secondary" type="submit">Tilføj admin</button>
           </form>
+        </section>
+        <section class="admin-panel">
+          <h2>Manuel pointjustering</h2>
+          <p class="admin-muted">Justeringer tilføjes historikken og kan ikke slettes. Brug minus for at trække point fra og plus for at tilføje.</p>
+          <form id="point-adjust-form" class="point-form">
+            <div><label for="point-user">Profil</label><select id="point-user" required></select></div>
+            <div class="point-rule-range">
+              <div><label for="point-adjustment">Point (−100 til 100)</label><input id="point-adjustment" type="number" min="-100" max="100" required></div>
+            </div>
+            <div><label for="point-adjustment-reason">Begrundelse</label><textarea id="point-adjustment-reason" maxlength="300" required></textarea></div>
+            <button class="button button-secondary" type="submit">Tilføj justering</button>
+          </form>
+        </section>
+        <section class="admin-panel">
+          <h2>Pointhistorik</h2>
+          <table class="admin-table">
+            <thead><tr><th>Profil</th><th>Point</th><th>Kilde</th><th>Begrundelse</th><th>Dato</th></tr></thead>
+            <tbody id="point-entries" data-columns="5"></tbody>
+          </table>
         </section>
         <section class="admin-panel">
           <h2>Profiler</h2>

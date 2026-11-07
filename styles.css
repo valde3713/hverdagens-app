@@ -146,6 +146,7 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
 .activity-image-preview { display: block; width: min(100%, 420px); max-height: 280px; margin-top: 12px; border: 1px solid #e7ece3; border-radius: 14px; background: #f3f6ef; object-fit: cover; box-shadow: 0 6px 18px #263b3010; }
 .activity-image-preview[hidden] { display: none; }
 .activity-points { color: #658568; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.ai-scoring-consent { margin-top: 12px; }
 .activity-delete { padding: 6px 8px; border: 1px solid #f0dfdb; border-radius: 7px; background: #fff; color: #a35d51; cursor: pointer; font-size: 10px; }
 .activity-delete:hover { background: #fcf2ef; }
 .empty-state { padding: 22px 6px; color: #98a398; font-size: 11px; line-height: 1.7; }
@@ -312,7 +313,7 @@ input::placeholder, textarea::placeholder { color: #a6b0a6; }
   .profile-panel { padding: 18px; }
   .settings-panel { padding: 18px; }
   .settings-grid { grid-template-columns: 1fr; gap: 10px; }
-  .activity-points { display: none; }
+  .activity-points { font-size: 9px; }
   .footer { padding-inline: 18px; }
 }
 

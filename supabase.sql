@@ -50,8 +50,12 @@ create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   description text not null check (char_length(trim(description)) between 1 and 240),
+  image_path text,
   created_at timestamptz not null default now()
 );
+
+alter table public.activities
+  add column if not exists image_path text;
 
 create table if not exists public.profile_private (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -149,8 +153,8 @@ begin
 
   if coalesce(new.raw_user_meta_data ->> 'terms_accepted', '') <> 'true'
      or coalesce(new.raw_user_meta_data ->> 'privacy_accepted', '') <> 'true'
-     or coalesce(new.raw_user_meta_data ->> 'terms_version', '') <> '2026-10-23'
-     or coalesce(new.raw_user_meta_data ->> 'privacy_version', '') <> '2026-10-23' then
+     or coalesce(new.raw_user_meta_data ->> 'terms_version', '') <> '2026-11-07'
+     or coalesce(new.raw_user_meta_data ->> 'privacy_version', '') <> '2026-11-07' then
     raise exception 'You must accept the current terms and privacy notice to create an account.';
   end if;
 
@@ -187,9 +191,9 @@ begin
     new.id,
     lower(trim(new.raw_user_meta_data ->> 'contact_email')),
     nullif(trim(new.raw_user_meta_data ->> 'real_name'), ''),
-    '2026-10-23',
+    '2026-11-07',
     now(),
-    '2026-10-23',
+    '2026-11-07',
     now(),
     true,
     now()
@@ -290,12 +294,13 @@ as $$
         jsonb_build_object(
           'id', recent.id,
           'description', recent.description,
-          'created_at', recent.created_at
+          'created_at', recent.created_at,
+          'image_path', recent.image_path
         )
         order by recent.created_at desc
       )
       from (
-        select id, description, created_at
+        select id, description, created_at, image_path
         from public.activities
         where user_id = p.id
         order by created_at desc
@@ -434,7 +439,12 @@ as $$
     ),
     'activities', coalesce((
       select jsonb_agg(
-        jsonb_build_object('id', a.id, 'description', a.description, 'created_at', a.created_at)
+        jsonb_build_object(
+          'id', a.id,
+          'description', a.description,
+          'created_at', a.created_at,
+          'image_path', a.image_path
+        )
         order by a.created_at
       )
       from public.activities as a
@@ -549,7 +559,26 @@ create extension if not exists pgcrypto with schema extensions;
 alter table public.admin_users
   add column if not exists access_code_hash text,
   add column if not exists failed_attempts integer not null default 0,
-  add column if not exists locked_until timestamptz;
+  add column if not exists locked_until timestamptz,
+  add column if not exists role text not null default 'admin';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'admin_users_role_check'
+      and conrelid = 'public.admin_users'::regclass
+  ) then
+    alter table public.admin_users
+      add constraint admin_users_role_check check (role in ('admin', 'owner'));
+  end if;
+end;
+$$;
+
+create unique index if not exists admin_users_single_owner_idx
+  on public.admin_users (role)
+  where role = 'owner';
 
 alter table public.admin_users enable row level security;
 revoke all on public.admin_users from public, anon, authenticated;
@@ -625,10 +654,14 @@ begin
 
   select jsonb_build_object(
     'generated_at', now(),
+    'current_role', admin_record.role,
     'profiles', coalesce((
       select jsonb_agg(
         jsonb_build_object(
+          'user_id', p.id,
           'nickname', p.nickname,
+          'is_admin', admins.user_id is not null,
+          'admin_role', admins.role,
           'display_name', case
             when p.display_name_mode = 'real_name' and private.real_name is not null
               then private.real_name
@@ -650,6 +683,7 @@ begin
       )
       from public.profiles as p
       left join public.profile_private as private on private.user_id = p.id
+      left join public.admin_users as admins on admins.user_id = p.id
     ), '[]'::jsonb),
     'activities', coalesce((
       select jsonb_agg(
@@ -678,5 +712,223 @@ select id
 from auth.users
 where lower(email) = 'admin@users.hverdagens.invalid'
 on conflict (user_id) do nothing;
+
+create or replace function public.get_my_profile()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'user_id', p.id,
+    'nickname', p.nickname,
+    'display_name_mode', p.display_name_mode,
+    'display_name', case
+      when p.display_name_mode = 'real_name' and private.real_name is not null
+        then private.real_name
+      else p.nickname
+    end,
+    'real_name', private.real_name,
+    'bio', p.bio,
+    'email', private.email,
+    'public_profile_enabled', private.public_profile_enabled,
+    'public_profile_enabled_at', private.public_profile_enabled_at,
+    'terms_accepted_at', private.terms_accepted_at,
+    'privacy_accepted_at', private.privacy_accepted_at,
+    'admin_role', admins.role
+  )
+  from public.profiles as p
+  left join public.profile_private as private on private.user_id = p.id
+  left join public.admin_users as admins on admins.user_id = p.id
+  where p.id = (select auth.uid());
+$$;
+
+create or replace function public.get_public_profile(requested_user_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'user_id', p.id,
+    'display_name', case
+      when p.display_name_mode = 'real_name' and private.real_name is not null
+        then private.real_name
+      else p.nickname
+    end,
+    'bio', p.bio,
+    'admin_role', admins.role,
+    'points', (select count(*) from public.activities as counted where counted.user_id = p.id),
+    'activities', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', recent.id,
+          'description', recent.description,
+          'created_at', recent.created_at,
+          'image_path', recent.image_path
+        )
+        order by recent.created_at desc
+      )
+      from (
+        select id, description, created_at, image_path
+        from public.activities
+        where user_id = p.id
+        order by created_at desc
+        limit 100
+      ) as recent
+    ), '[]'::jsonb)
+  )
+  from public.profiles as p
+  left join public.profile_private as private on private.user_id = p.id
+  left join public.admin_users as admins on admins.user_id = p.id
+  where p.id = requested_user_id
+    and (private.public_profile_enabled or p.id = (select auth.uid()))
+    and (select auth.uid()) is not null;
+$$;
+
+notify pgrst, 'reload schema';
+
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+values (
+  'deed-images',
+  'deed-images',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+create or replace function public.can_read_deed_image(object_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.activities as activity
+    left join public.profile_private as private on private.user_id = activity.user_id
+    where activity.image_path = object_name
+      and (
+        activity.user_id = (select auth.uid())
+        or (
+          (select auth.uid()) is not null
+          and coalesce(private.public_profile_enabled, false)
+        )
+      )
+  );
+$$;
+
+create or replace function public.can_upload_deed_image(object_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.activities as activity
+    where activity.user_id = (select auth.uid())
+      and activity.image_path is null
+      and object_name in (
+        (select auth.uid())::text || '/' || activity.id::text || '.jpg',
+        (select auth.uid())::text || '/' || activity.id::text || '.png',
+        (select auth.uid())::text || '/' || activity.id::text || '.webp'
+      )
+  );
+$$;
+
+revoke all on function public.can_read_deed_image(text) from public, anon;
+revoke all on function public.can_upload_deed_image(text) from public, anon;
+grant execute on function public.can_read_deed_image(text) to authenticated;
+grant execute on function public.can_upload_deed_image(text) to authenticated;
+
+drop policy if exists "Users can view allowed deed images" on storage.objects;
+create policy "Users can view allowed deed images"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'deed-images'
+    and public.can_read_deed_image(name)
+  );
+
+drop policy if exists "Users can upload their deed images" on storage.objects;
+create policy "Users can upload their deed images"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'deed-images'
+    and public.can_upload_deed_image(name)
+  );
+
+drop policy if exists "Users can delete their deed images" on storage.objects;
+create policy "Users can delete their deed images"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'deed-images'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
+
+create or replace function public.set_activity_image(
+  requested_activity_id uuid,
+  requested_image_path text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Du skal være logget ind for at tilføje et billede.';
+  end if;
+
+  if requested_activity_id is null
+     or requested_image_path is null
+     or requested_image_path not in (
+       auth.uid()::text || '/' || requested_activity_id::text || '.jpg',
+       auth.uid()::text || '/' || requested_activity_id::text || '.png',
+       auth.uid()::text || '/' || requested_activity_id::text || '.webp'
+     ) then
+    raise exception 'Billedstien er ugyldig.';
+  end if;
+
+  if not exists (
+    select 1
+    from storage.objects as stored_image
+    where stored_image.bucket_id = 'deed-images'
+      and stored_image.name = requested_image_path
+  ) then
+    raise exception 'Billedet blev ikke fundet i lageret.';
+  end if;
+
+  update public.activities
+  set image_path = requested_image_path
+  where id = requested_activity_id
+    and user_id = auth.uid()
+    and image_path is null;
+
+  if not found then
+    raise exception 'Gerningen findes ikke, eller den har allerede et billede.';
+  end if;
+end;
+$$;
+
+revoke all on function public.set_activity_image(uuid, text) from public, anon;
+grant execute on function public.set_activity_image(uuid, text) to authenticated;
 
 notify pgrst, 'reload schema';

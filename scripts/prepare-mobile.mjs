@@ -9,6 +9,7 @@ const webFiles = [
   "config.js",
   "index.html",
   "leaf.svg",
+  "nature-check.js",
   "privacy.html",
   "styles.css",
   "terms.html",

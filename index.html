@@ -129,8 +129,8 @@
             <section class="hero-card">
               <div class="hero-copy">
                 <span class="hero-tag">DAGENS REFLEKSION</span>
-                <h2>Hvad har du gjort godt for naturen i dag?</h2>
-                <p>Ingen handling er for lille. Del den med fællesskabet.</p>
+                <h2>Hvad har du gjort for naturen i dag?</h2>
+                <p>Del en god handling, eller indberet en skadelig handling.</p>
               </div>
               <div class="hero-illustration" aria-hidden="true">
                 <span class="hero-sun"></span><span class="hero-sprout">✳</span>
@@ -140,7 +140,7 @@
             <div class="dashboard-grid">
               <section class="panel entry-panel">
                 <div class="panel-heading">
-                  <div><p class="eyebrow">DIN DAGBOG</p><h2>Tilføj en god gerning</h2></div>
+                  <div><p class="eyebrow">DIN DAGBOG</p><h2>Indberet en handling</h2></div>
                   <span class="panel-icon" aria-hidden="true">＋</span>
                 </div>
                 <form id="activity-form">
@@ -156,6 +156,7 @@
                   <p class="photo-upload-hint setting-hint">JPEG, PNG eller WebP · maks. 5 MB</p>
                   <img id="activity-image-preview" class="activity-image-preview" alt="Forhåndsvisning af valgt billede" hidden>
                   <p class="privacy-reminder">Skriv ikke private eller følsomme oplysninger.</p>
+                  <p id="ai-model-status" class="setting-hint" role="status" aria-live="polite">Lokal AI vurderer, om din handling gavner eller skader naturen, og tildeler 1–5 point eller trækker 1 point fra. Teksten sendes ikke til en ekstern AI-tjeneste. Første brug kræver internet og download af modellen (ca. 125 MB).</p>
                   <div class="form-bottom">
                     <span class="character-count" id="character-count">0 / 240</span>
                     <button class="button button-primary" type="submit">Del min gerning <span aria-hidden="true">→</span></button>
@@ -166,7 +167,7 @@
               <section class="panel score-panel">
                 <p class="eyebrow">DIT BIDRAG</p>
                 <div class="score-number" id="my-score">0</div>
-                <p class="score-label">gode gerninger i alt</p>
+                <p class="score-label">point i alt</p>
                 <div class="score-divider"></div>
                 <div class="score-bottom"><span>Din placering</span><strong id="my-rank">–</strong></div>
                 <button class="text-button" data-page="leaderboard" type="button">Se pointtavlen <span aria-hidden="true">→</span></button>
@@ -180,13 +181,20 @@
               </div>
               <div id="recent-list" class="recent-list"></div>
             </section>
+            <section class="panel recent-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">ÅBEN POINTHISTORIK</p><h2>Dine point</h2></div>
+                <span class="recent-count">KAN IKKE SLETTES</span>
+              </div>
+              <div id="point-history-list" class="recent-list"></div>
+            </section>
           </section>
 
           <section id="leaderboard-page" class="page" hidden>
             <div class="page-heading">
               <p class="eyebrow">VI GØR DET SAMMEN</p>
               <h1>Pointtavlen <span class="wave" aria-hidden="true">✳</span></h1>
-              <p class="page-subtitle">Hver delt gerning giver ét point. Alle kan være med!</p>
+              <p class="page-subtitle">Gode gerninger giver 1–5 point. Skadelige handlinger giver −1 pr. indberetning. Du og admins kan også rette point med synlig historik.</p>
             </div>
             <section class="panel leaderboard-panel">
               <div class="panel-heading"><div><p class="eyebrow">FÆLLESSKABET</p><h2>Grønne hverdagshelte</h2></div><span class="panel-icon" aria-hidden="true">♧</span></div>
@@ -218,7 +226,7 @@
             </section>
             <section class="panel profile-stats">
               <p class="eyebrow">GODE GERNINGER</p>
-              <p><strong id="public-profile-score">0</strong> <span id="public-profile-score-label">delte gode gerninger</span></p>
+              <p><strong id="public-profile-score">0</strong> <span id="public-profile-score-label">point</span></p>
               <div id="public-profile-activities" class="recent-list"></div>
             </section>
           </section>
@@ -235,7 +243,7 @@
             </section>
             <section class="panel profile-stats">
               <p class="eyebrow">DIT BIDRAG TIL NATUREN</p>
-              <p><strong id="profile-score">0</strong> delte gode gerninger</p>
+              <p><strong id="profile-score">0</strong> <span id="profile-score-label">point</span></p>
               <button id="open-settings" class="button button-secondary" data-page="settings" type="button">Indstillinger <span aria-hidden="true">→</span></button>
               <button id="profile-signout" class="button button-secondary" type="button">Log ud</button>
             </section>

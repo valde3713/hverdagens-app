@@ -1,3 +1,5 @@
+import { validateNatureAction } from "./nature-check.js";
+
 const config = window.APP_CONFIG;
 const { createClient } = window.supabase;
 const authScreen = document.querySelector("#auth-screen");
@@ -21,6 +23,7 @@ const termsAcceptedInput = document.querySelector("#terms-accepted");
 const privacyAcceptedInput = document.querySelector("#privacy-accepted");
 const activityForm = document.querySelector("#activity-form");
 const descriptionInput = document.querySelector("#activity-description");
+const aiModelStatus = document.querySelector("#ai-model-status");
 const activityImageInput = document.querySelector("#activity-image");
 const activityCameraInput = document.querySelector("#activity-camera-input");
 const activityImagePreview = document.querySelector("#activity-image-preview");
@@ -53,10 +56,10 @@ const translations = {
     "#home-page .welcome-row .page-subtitle": "Hver lille handling gør en forskel.",
     ".streak-badge": "Gør dagen grønnere",
     ".hero-tag": "DAGENS REFLEKSION",
-    ".hero-copy h2": "Hvad har du gjort godt for naturen i dag?",
-    ".hero-copy p": "Ingen handling er for lille. Del den med fællesskabet.",
+    ".hero-copy h2": "Hvad har du gjort for naturen i dag?",
+    ".hero-copy p": "Del en god handling, eller indberet en skadelig handling.",
     ".entry-panel .panel-heading .eyebrow": "DIN DAGBOG",
-    ".entry-panel .panel-heading h2": "Tilføj en god gerning",
+    ".entry-panel .panel-heading h2": "Indberet en handling",
     ".entry-panel label": "Hvad gjorde du?",
     ".photo-upload-label": "Tilføj et billede (valgfrit)",
     "#activity-camera-button": "Tag et billede",
@@ -64,34 +67,38 @@ const translations = {
     ".photo-upload-hint": "JPEG, PNG eller WebP · maks. 5 MB",
     "#activity-description": "Fx Jeg cyklede på arbejde i stedet for at tage bilen…",
     ".privacy-reminder": "Skriv ikke private eller følsomme oplysninger.",
+    "#ai-model-status": "Lokal AI vurderer, om din handling gavner eller skader naturen, og tildeler 1–5 point eller trækker 1 point fra. Teksten sendes ikke til en ekstern AI-tjeneste. Første brug kræver internet og download af modellen (ca. 125 MB).",
     ".entry-panel .form-bottom .button": "Del min gerning",
     ".score-panel > .eyebrow": "DIT BIDRAG",
-    ".score-label": "gode gerninger i alt",
+    ".score-label": "point i alt",
     ".score-bottom span": "Din placering",
     ".text-button": "Se pointtavlen",
     ".recent-panel .panel-heading .eyebrow": "SMÅ SKRIDT, STOR FORSKEL",
     ".recent-panel .panel-heading h2": "Dine seneste gerninger",
     "#leaderboard-page .page-heading .eyebrow": "VI GØR DET SAMMEN",
     "#leaderboard-page .page-heading h1": "Pointtavlen",
-    "#leaderboard-page .page-subtitle": "Hver delt gerning giver ét point. Alle kan være med!",
+    "#leaderboard-page .page-subtitle": "Gode gerninger giver 1–5 point. Skadelige handlinger giver −1 pr. indberetning. Du og admins kan også rette point.",
     ".leaderboard-panel .panel-heading .eyebrow": "FÆLLESSKABET",
     ".leaderboard-panel .panel-heading h2": "Grønne hverdagshelte",
-    ".leaderboard-head": "PLACERING GRØN HVERDAGSHELT GERNINGER",
+    ".leaderboard-head": "PLACERING GRØN HVERDAGSHELT POINT",
     "#profile-search-form label": "Find en profil",
     "#profile-search": "Søg efter visningsnavn",
     "#profile-search-results .setting-hint": "Skriv mindst to tegn for at søge.",
     "#public-profile-page .page-heading .eyebrow": "FÆLLESSKABET",
     "#back-to-leaderboard": "← Tilbage til pointtavlen",
     "#public-profile-page .profile-panel .eyebrow": "PROFILTEKST",
-    "#public-profile-page .profile-stats > .eyebrow": "GODE GERNINGER",
-    "#public-profile-score-label": "delte gode gerninger",
+    "#public-profile-page .profile-stats > .eyebrow": "POINT",
+    "#public-profile-score-label": "point",
+    "#home-page .recent-panel:last-child .panel-heading .eyebrow": "ÅBEN POINTHISTORIK",
+    "#home-page .recent-panel:last-child .panel-heading h2": "Dine point",
+    "#home-page .recent-panel:last-child .recent-count": "KAN IKKE SLETTES",
     "#profile-page .page-heading .eyebrow": "DET ER DIG, DER GØR EN FORSKEL",
     "#profile-page .page-heading h1": "Min profil",
     "#profile-page .page-heading .page-subtitle": "Dit offentlige navn og dine grønne gerninger.",
     "#profile-page .profile-panel .eyebrow": "OFFENTLIGT NAVN",
     "#nickname-lock-message": "Du kan ændre kaldenavn, når du har delt mindst 35 gerninger.",
     ".profile-stats > .eyebrow": "DIT BIDRAG TIL NATUREN",
-    ".profile-stats p:not(.eyebrow)": "delte gode gerninger",
+    "#profile-score-label": "point",
     "#profile-signout": "Log ud",
     "#open-settings": "Indstillinger",
     "#back-to-profile": "← Tilbage til profil",
@@ -166,9 +173,9 @@ const translations = {
     ".streak-badge": "Make today greener",
     ".hero-tag": "TODAY'S REFLECTION",
     ".hero-copy h2": "What have you done for nature today?",
-    ".hero-copy p": "No action is too small. Share it with the community.",
+    ".hero-copy p": "Share a helpful action or report a harmful one.",
     ".entry-panel .panel-heading .eyebrow": "YOUR JOURNAL",
-    ".entry-panel .panel-heading h2": "Add a good deed",
+    ".entry-panel .panel-heading h2": "Report an action",
     ".entry-panel label": "What did you do?",
     ".photo-upload-label": "Add a photo (optional)",
     "#activity-camera-button": "Take a photo",
@@ -176,34 +183,38 @@ const translations = {
     ".photo-upload-hint": "JPEG, PNG, or WebP · max 5 MB",
     "#activity-description": "E.g. I cycled to work instead of driving…",
     ".privacy-reminder": "Do not include private or sensitive information.",
+    "#ai-model-status": "Local AI estimates whether your action helps or harms nature and awards 1–5 points or deducts 1 point. Your text is not sent to an external AI service. The model requires an internet connection and a download (about 125 MB) on first use.",
     ".entry-panel .form-bottom .button": "Share my deed",
     ".score-panel > .eyebrow": "YOUR CONTRIBUTION",
-    ".score-label": "good deeds in total",
+    ".score-label": "points in total",
     ".score-bottom span": "Your place",
     ".text-button": "See leaderboard",
     ".recent-panel .panel-heading .eyebrow": "SMALL STEPS, BIG DIFFERENCE",
     ".recent-panel .panel-heading h2": "Your recent deeds",
     "#leaderboard-page .page-heading .eyebrow": "WE MAKE A DIFFERENCE TOGETHER",
     "#leaderboard-page .page-heading h1": "Leaderboard",
-    "#leaderboard-page .page-subtitle": "Every shared deed earns one point. Everyone can join!",
+    "#leaderboard-page .page-subtitle": "Helpful deeds earn 1–5 points. Harmful actions deduct 1 point per report. You and admins can also adjust points.",
     ".leaderboard-panel .panel-heading .eyebrow": "THE COMMUNITY",
     ".leaderboard-panel .panel-heading h2": "Everyday green heroes",
-    ".leaderboard-head": "PLACE GREEN HERO DEEDS",
+    ".leaderboard-head": "PLACE GREEN HERO POINTS",
     "#profile-search-form label": "Find a profile",
     "#profile-search": "Search display names",
     "#profile-search-results .setting-hint": "Enter at least two characters to search.",
     "#public-profile-page .page-heading .eyebrow": "THE COMMUNITY",
     "#back-to-leaderboard": "← Back to leaderboard",
     "#public-profile-page .profile-panel .eyebrow": "PROFILE",
-    "#public-profile-page .profile-stats > .eyebrow": "GOOD DEEDS",
-    "#public-profile-score-label": "good deeds shared",
+    "#public-profile-page .profile-stats > .eyebrow": "POINTS",
+    "#public-profile-score-label": "points",
+    "#home-page .recent-panel:last-child .panel-heading .eyebrow": "TRANSPARENT POINT HISTORY",
+    "#home-page .recent-panel:last-child .panel-heading h2": "Your points",
+    "#home-page .recent-panel:last-child .recent-count": "CANNOT BE DELETED",
     "#profile-page .page-heading .eyebrow": "YOU ARE MAKING A DIFFERENCE",
     "#profile-page .page-heading h1": "My profile",
     "#profile-page .page-heading .page-subtitle": "Your public name and green deeds.",
     "#profile-page .profile-panel .eyebrow": "PUBLIC NAME",
     "#nickname-lock-message": "You can change your nickname after sharing at least 35 deeds.",
     ".profile-stats > .eyebrow": "YOUR CONTRIBUTION TO NATURE",
-    ".profile-stats p:not(.eyebrow)": "good deeds shared",
+    "#profile-score-label": "points",
     "#profile-signout": "Log out",
     "#open-settings": "Settings",
     "#back-to-profile": "← Back to profile",
@@ -336,22 +347,26 @@ function showSignedIn(user) {
 async function loadDashboard() {
   if (!currentUser) return;
   try {
-    const [leaderboardResult, activityResult, profileResult] = await Promise.all([
+    const [leaderboardResult, activityResult, profileResult, pointHistoryResult] = await Promise.all([
       supabase.rpc("get_leaderboard"),
       supabase.from("activities")
         .select("id, description, created_at, image_path")
         .eq("user_id", currentUser.id)
         .order("created_at", { ascending: false })
         .limit(1000),
-      supabase.rpc("get_my_profile")
+      supabase.rpc("get_my_profile"),
+      supabase.rpc("get_my_point_history")
     ]);
     if (leaderboardResult.error) throw leaderboardResult.error;
     if (activityResult.error) throw activityResult.error;
     if (profileResult.error) throw profileResult.error;
+    if (pointHistoryResult.error) throw pointHistoryResult.error;
     currentProfile = profileResult.data;
     renderMyProfile(currentProfile);
     renderLeaderboard(leaderboardResult.data || []);
-    renderActivities(await addSignedImageUrls(activityResult.data || []));
+    const pointEntries = Array.isArray(pointHistoryResult.data) ? pointHistoryResult.data : [];
+    renderActivities(await addSignedImageUrls(activityResult.data || []), pointEntries);
+    renderPointHistory(pointEntries);
   } catch (error) {
     displayError(error);
   }
@@ -389,7 +404,7 @@ function renderLeaderboard(rows) {
   const score = myRow ? Number(myRow.points) : 0;
   document.querySelector("#my-score").textContent = String(score);
   document.querySelector("#profile-score").textContent = String(score);
-  updateNicknameAvailability(score);
+  updateNicknameAvailability(Number(currentProfile?.activity_count || 0));
   document.querySelector("#my-rank").textContent = rank < 0 ? "–" : `#${rank + 1}`;
   leaderboardList.replaceChildren();
   if (sorted.length === 0) {
@@ -416,8 +431,8 @@ function renderLeaderboard(rows) {
     const points = document.createElement("span");
     points.className = "leader-score";
     points.textContent = languageSetting.value === "en"
-      ? `${row.points} ${Number(row.points) === 1 ? "deed" : "deeds"}`
-      : `${row.points} ${Number(row.points) === 1 ? "gerning" : "gerninger"}`;
+      ? `${row.points} ${Number(row.points) === 1 ? "point" : "points"}`
+      : `${row.points} ${Number(row.points) === 1 ? "point" : "point"}`;
     item.append(position, identity, points);
     leaderboardList.append(item);
   });
@@ -479,7 +494,11 @@ async function openPublicProfile(userId) {
         time.className = "activity-time";
         time.textContent = formatDate(activity.created_at);
         copy.append(time);
-        item.append(copy);
+        const points = document.createElement("span");
+        points.className = "activity-points";
+        const activityPoints = Number(activity.points || 0);
+        points.textContent = `${activityPoints > 0 ? "+" : ""}${activityPoints} ${languageSetting.value === "en" ? "points" : "point"}`;
+        item.append(copy, points);
         activities.append(item);
       }
     }
@@ -544,7 +563,7 @@ function emptyState(text) {
   return item;
 }
 
-function renderActivities(activities) {
+function renderActivities(activities, pointEntries) {
   recentList.replaceChildren();
   document.querySelector("#recent-count").textContent = languageSetting.value === "en"
     ? `${activities.length} SHARED`
@@ -580,7 +599,11 @@ function renderActivities(activities) {
     copy.append(time);
     const points = document.createElement("span");
     points.className = "activity-points";
-    points.textContent = "+1 point";
+    const activityEntries = pointEntries.filter((entry) => entry.activity_id === activity.id);
+    const score = activityEntries.reduce((total, entry) => total + Number(entry.points), 0);
+    points.textContent = activityEntries.length
+      ? `${score > 0 ? "+" : ""}${score} ${languageSetting.value === "en" ? "points" : "point"}`
+      : (languageSetting.value === "en" ? "No points" : "Ingen point");
     const deleteButton = document.createElement("button");
     deleteButton.className = "activity-delete";
     deleteButton.type = "button";
@@ -592,10 +615,43 @@ function renderActivities(activities) {
   }
 }
 
+function renderPointHistory(entries) {
+  const history = document.querySelector("#point-history-list");
+  history.replaceChildren();
+  if (!entries.length) {
+    history.append(emptyState(languageSetting.value === "en" ? "No points have been awarded yet." : "Der er ikke tildelt point endnu."));
+    return;
+  }
+  for (const entry of entries) {
+    const item = document.createElement("article");
+    item.className = "recent-item";
+    const points = document.createElement("span");
+    points.className = "activity-points";
+    const value = Number(entry.points);
+    points.textContent = `${value > 0 ? "+" : ""}${value} ${languageSetting.value === "en" ? "points" : "point"}`;
+    const copy = document.createElement("div");
+    copy.className = "activity-copy";
+    const reason = document.createElement("div");
+    reason.className = "activity-description";
+    reason.textContent = entry.reason;
+    const metadata = document.createElement("div");
+    metadata.className = "activity-time";
+    const source = entry.source === "local_ai" || entry.source === "ai"
+      ? (languageSetting.value === "en" ? "Local AI" : "Lokal AI")
+      : entry.source === "legacy"
+        ? (languageSetting.value === "en" ? "Earlier deed" : "Tidligere gerning")
+        : (languageSetting.value === "en" ? "Admin adjustment" : "Admin-justering");
+    metadata.textContent = `${source} · ${formatDate(entry.created_at)}`;
+    copy.append(reason, metadata);
+    item.append(points, copy);
+    history.append(item);
+  }
+}
+
 async function deleteActivity(activityId, imagePath) {
   const message = languageSetting.value === "en"
-    ? "Delete this deed? The point will be removed from your score."
-    : "Slet denne gerning? Pointet bliver trukket fra din score.";
+    ? "Delete this deed? Its point history will remain in your score."
+    : "Slet denne gerning? Dens pointhistorik bliver stående i din score.";
   if (!window.confirm(message)) return;
   try {
     const { error } = await supabase.from("activities")
@@ -672,8 +728,8 @@ authForm.addEventListener("submit", async (event) => {
             real_name: realNameInput.value.trim(),
             terms_accepted: termsAcceptedInput.checked,
             privacy_accepted: privacyAcceptedInput.checked,
-            terms_version: "2026-10-23",
-            privacy_version: "2026-10-23"
+            terms_version: "2026-11-07",
+            privacy_version: "2026-11-07"
           }
         }
       });
@@ -718,6 +774,34 @@ activityForm.addEventListener("submit", async (event) => {
   const submit = activityForm.querySelector('button[type="submit"]');
   submit.disabled = true;
   try {
+    aiModelStatus.textContent = languageSetting.value === "en"
+      ? "Checking your deed locally. The first check may take a little while while the model downloads."
+      : "Tjekker gerningen lokalt. Første tjek kan tage lidt tid, mens modellen hentes.";
+    const validation = await validateNatureAction(description, (event) => {
+      if (event.status === "progress" && Number.isFinite(event.progress)) {
+        const progress = Math.round(event.progress);
+        aiModelStatus.textContent = languageSetting.value === "en"
+          ? `Downloading the local AI model: ${progress}%`
+          : `Henter den lokale AI-model: ${progress}%`;
+      }
+    });
+    if (validation.points === 0) {
+      aiModelStatus.textContent = languageSetting.value === "en"
+        ? "The local AI could not identify a clear helpful or harmful action. Try describing what happened."
+        : "Den lokale AI kunne ikke genkende en tydelig god eller skadelig handling. Prøv at beskrive, hvad der skete.";
+      showNotice(languageSetting.value === "en"
+        ? "This report was not scored. Please describe a clear action that helps or harms nature or the environment."
+        : "Indberetningen fik ikke point. Beskriv tydeligt en handling, der hjælper eller skader naturen eller miljøet.", true);
+      return;
+    }
+
+    aiModelStatus.textContent = languageSetting.value === "en"
+      ? validation.points > 0
+        ? `Helpful action scored ${validation.points} points locally.`
+        : "Harmful action recorded locally: 1 point deducted."
+      : validation.points > 0
+        ? `God handling vurderet lokalt til ${validation.points} point.`
+        : "Skadelig handling registreret lokalt: 1 point trukket fra.";
     const { data: activity, error } = await supabase.from("activities").insert({
       user_id: currentUser.id,
       description
@@ -748,6 +832,10 @@ activityForm.addEventListener("submit", async (event) => {
         throw attachError;
       }
     }
+    const { error: pointError } = await supabase.rpc("award_local_deed_point", {
+      requested_activity_id: activity.id,
+      requested_points: validation.points,
+    });
     descriptionInput.value = "";
     activityImageInput.value = "";
     activityCameraInput.value = "";
@@ -757,9 +845,22 @@ activityForm.addEventListener("submit", async (event) => {
     activityImagePreview.dataset.objectUrl = "";
     activityImagePreview.hidden = true;
     document.querySelector("#character-count").textContent = "0 / 240";
-    showNotice("Din gode gerning er delt. Tak fordi du gør en forskel!");
+    showNotice(pointError
+      ? (languageSetting.value === "en"
+        ? `Your report was saved, but its points could not be recorded: ${pointError.message}`
+        : `Din indberetning blev gemt, men pointene kunne ikke registreres: ${pointError.message}`)
+      : (languageSetting.value === "en"
+        ? validation.points > 0
+          ? `Your helpful action was shared. You earned ${validation.points} points.`
+          : "Your harmful action was recorded. 1 point was deducted."
+        : validation.points > 0
+          ? `Din gode handling blev delt. Du fik ${validation.points} point.`
+          : "Din skadelige handling blev registreret. 1 point blev trukket fra."), Boolean(pointError));
     await loadDashboard();
   } catch (error) {
+    aiModelStatus.textContent = languageSetting.value === "en"
+      ? "The deed could not be checked or saved. Check your connection, then try again."
+      : "Gerningen kunne ikke kontrolleres eller gemmes. Kontrollér forbindelsen, og prøv igen.";
     displayError(error);
   } finally {
     submit.disabled = false;
@@ -940,8 +1041,8 @@ function applyPreferences() {
     if (!element) continue;
     if (selector === ".leaderboard-head") {
       const labels = preferences.language === "en"
-        ? ["PLACE", "GREEN HERO", "DEEDS"]
-        : ["PLACERING", "GRØN HVERDAGSHELT", "GERNINGER"];
+        ? ["PLACE", "GREEN HERO", "POINTS"]
+        : ["PLACERING", "GRØN HVERDAGSHELT", "POINT"];
       element.replaceChildren(...labels.map((label) => {
         const span = document.createElement("span");
         span.textContent = label;
@@ -982,7 +1083,7 @@ function applyPreferences() {
       english ? "No profile text yet." : "Ingen profiltekst endnu."
     );
   }
-  updateNicknameAvailability(Number(document.querySelector("#profile-score").textContent));
+  updateNicknameAvailability(Number(currentProfile?.activity_count || 0));
   if (currentUser) loadDashboard();
 }
 
