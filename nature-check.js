@@ -54,6 +54,10 @@ async function getClassifier(onProgress) {
   return classifierPromise;
 }
 
+export async function prepareNatureModel(onProgress = () => {}) {
+  await getClassifier(onProgress);
+}
+
 export async function validateNatureAction(description, onProgress = () => {}) {
   const classifier = await getClassifier(onProgress);
   const actionResult = await classifier(description, ACTION_LABELS, {

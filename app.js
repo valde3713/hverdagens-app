@@ -1,4 +1,4 @@
-import { validateNatureAction } from "./nature-check.js";
+import { prepareNatureModel, validateNatureAction } from "./nature-check.js";
 
 const config = window.APP_CONFIG;
 const { createClient } = window.supabase;
@@ -36,6 +36,7 @@ const languageSetting = document.querySelector("#language-setting");
 let supabase;
 let currentUser;
 let currentProfile;
+let natureModelWarmup;
 let authFlow = 0;
 let isSignup = false;
 let noticeTimeout;
@@ -287,6 +288,34 @@ function displayError(error) {
   showNotice(message, true);
 }
 
+function updateNatureModelProgress(event) {
+  if (event.status !== "progress" || !Number.isFinite(event.progress)) return;
+  const progress = Math.round(event.progress);
+  aiModelStatus.textContent = languageSetting.value === "en"
+    ? `Downloading the local AI model: ${progress}%`
+    : `Henter den lokale AI-model: ${progress}%`;
+}
+
+function preloadNatureModel() {
+  if (natureModelWarmup) return;
+  aiModelStatus.textContent = languageSetting.value === "en"
+    ? "Preparing the local AI model. The first download is about 125 MB."
+    : "Gør den lokale AI-model klar. Første download er cirka 125 MB.";
+  natureModelWarmup = prepareNatureModel(updateNatureModelProgress)
+    .then(() => {
+      aiModelStatus.textContent = languageSetting.value === "en"
+        ? "The local AI model is ready and cached on this device."
+        : "Den lokale AI-model er klar og cachet på denne enhed.";
+    })
+    .catch((error) => {
+      natureModelWarmup = undefined;
+      aiModelStatus.textContent = languageSetting.value === "en"
+        ? "The local AI model could not be downloaded. It will retry when you submit an action."
+        : "Den lokale AI-model kunne ikke hentes. Den prøver igen, når du indberetter en handling.";
+      displayError(error);
+    });
+}
+
 function setAuthMode(signup) {
   isSignup = signup;
   loginTab.classList.toggle("active", !signup);
@@ -329,6 +358,7 @@ function showSignedIn(user) {
   }
   authScreen.hidden = true;
   appShell.hidden = false;
+  preloadNatureModel();
   for (const id of ["welcome-nickname", "topbar-nickname", "profile-nickname"]) {
     document.getElementById(id).textContent = nickname;
   }
@@ -777,14 +807,7 @@ activityForm.addEventListener("submit", async (event) => {
     aiModelStatus.textContent = languageSetting.value === "en"
       ? "Checking your deed locally. The first check may take a little while while the model downloads."
       : "Tjekker gerningen lokalt. Første tjek kan tage lidt tid, mens modellen hentes.";
-    const validation = await validateNatureAction(description, (event) => {
-      if (event.status === "progress" && Number.isFinite(event.progress)) {
-        const progress = Math.round(event.progress);
-        aiModelStatus.textContent = languageSetting.value === "en"
-          ? `Downloading the local AI model: ${progress}%`
-          : `Henter den lokale AI-model: ${progress}%`;
-      }
-    });
+    const validation = await validateNatureAction(description, updateNatureModelProgress);
     if (validation.points === 0) {
       aiModelStatus.textContent = languageSetting.value === "en"
         ? "The local AI could not identify a clear helpful or harmful action. Try describing what happened."
