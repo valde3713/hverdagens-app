@@ -1,14 +1,14 @@
 const MODEL_ID = "onnx-community/multilingual-MiniLMv2-L6-mnli-xnli-ONNX";
 const MODEL_REVISION = "ca5daf3d11b6c4b3143b1f4602a2edfb64c3ad7e";
-const MODEL_THRESHOLD = 0.62;
+const MODEL_THRESHOLD = 0.45;
 const ACTION_LABELS = [
-  "en konkret handling, der gavner naturen eller miljøet",
+  "en konkret handling, der gavner naturen eller miljøet, for eksempel at samle skrald op",
   "en skadelig handling, for eksempel at smide affald i naturen eller køre i en benzin- eller dieselbil",
   "ingen konkret handling eller en handling uden tydelig positiv eller negativ miljøpåvirkning",
 ];
 const POSITIVE_SCORE_CATEGORIES = [
   {
-    label: "en lille konkret handling, der hjælper naturen eller miljøet",
+    label: "en lille konkret handling, for eksempel at samle skrald op eller sortere affald",
     points: 1,
   },
   {

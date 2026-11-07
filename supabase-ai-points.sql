@@ -323,6 +323,37 @@ as $$
   where entry.user_id = (select auth.uid());
 $$;
 
+create or replace function public.owner_delete_own_negative_point(requested_entry_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  account_id uuid := auth.uid();
+begin
+  if account_id is null or not exists (
+    select 1
+    from public.admin_users
+    where user_id = account_id
+      and role = 'owner'
+  ) then
+    raise exception 'Kun Owner kan slette egne minuspoint.';
+  end if;
+
+  delete from public.point_ledger
+  where id = requested_entry_id
+    and user_id = account_id
+    and points = -1;
+
+  if not found then
+    return jsonb_build_object('error', 'Kun dine egne minuspoint på præcis 1 point kan slettes.');
+  end if;
+
+  return jsonb_build_object('deleted', true);
+end;
+$$;
+
 create or replace function public.get_my_profile()
 returns jsonb
 language sql
@@ -415,6 +446,7 @@ revoke all on function public.get_point_management_data(text) from public, anon;
 drop function if exists public.award_local_deed_point(uuid);
 revoke all on function public.award_local_deed_point(uuid, integer) from public, anon;
 revoke all on function public.get_my_point_history() from public, anon;
+revoke all on function public.owner_delete_own_negative_point(uuid) from public, anon;
 revoke all on function public.get_my_profile() from public, anon;
 grant execute on function public.admin_adjust_points(text, text, integer, text) to authenticated;
 grant execute on function public.get_point_management_data(text) to authenticated;
@@ -424,6 +456,7 @@ grant execute on function public.search_public_profiles(text) to authenticated;
 grant execute on function public.get_public_profile(uuid) to authenticated;
 grant execute on function public.export_my_data() to authenticated;
 grant execute on function public.get_my_point_history() to authenticated;
+grant execute on function public.owner_delete_own_negative_point(uuid) to authenticated;
 grant execute on function public.get_my_profile() to authenticated;
 
 drop function if exists public.get_current_point_policy();

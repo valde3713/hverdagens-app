@@ -92,7 +92,7 @@ const translations = {
     "#public-profile-score-label": "point",
     "#home-page .recent-panel:last-child .panel-heading .eyebrow": "ÅBEN POINTHISTORIK",
     "#home-page .recent-panel:last-child .panel-heading h2": "Dine point",
-    "#home-page .recent-panel:last-child .recent-count": "KAN IKKE SLETTES",
+    "#home-page .recent-panel:last-child .recent-count": "HISTORIK",
     "#profile-page .page-heading .eyebrow": "DET ER DIG, DER GØR EN FORSKEL",
     "#profile-page .page-heading h1": "Min profil",
     "#profile-page .page-heading .page-subtitle": "Dit offentlige navn og dine grønne gerninger.",
@@ -208,7 +208,7 @@ const translations = {
     "#public-profile-score-label": "points",
     "#home-page .recent-panel:last-child .panel-heading .eyebrow": "TRANSPARENT POINT HISTORY",
     "#home-page .recent-panel:last-child .panel-heading h2": "Your points",
-    "#home-page .recent-panel:last-child .recent-count": "CANNOT BE DELETED",
+    "#home-page .recent-panel:last-child .recent-count": "HISTORY",
     "#profile-page .page-heading .eyebrow": "YOU ARE MAKING A DIFFERENCE",
     "#profile-page .page-heading h1": "My profile",
     "#profile-page .page-heading .page-subtitle": "Your public name and green deeds.",
@@ -674,7 +674,42 @@ function renderPointHistory(entries) {
     metadata.textContent = `${source} · ${formatDate(entry.created_at)}`;
     copy.append(reason, metadata);
     item.append(points, copy);
+    if (value === -1 && currentProfile?.admin_role === "owner") {
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "activity-delete";
+      deleteButton.type = "button";
+      deleteButton.textContent = languageSetting.value === "en" ? "Delete" : "Slet";
+      deleteButton.setAttribute("aria-label", languageSetting.value === "en"
+        ? "Delete this one-point deduction"
+        : "Slet dette minuspoint");
+      deleteButton.addEventListener("click", () => deleteOwnNegativePoint(entry.id));
+      item.append(deleteButton);
+    }
     history.append(item);
+  }
+}
+
+async function deleteOwnNegativePoint(entryId) {
+  if (currentProfile?.admin_role !== "owner") return;
+  const confirmed = window.confirm(languageSetting.value === "en"
+    ? "Permanently delete this −1 point from your history?"
+    : "Slet dette −1 point permanent fra din historik?");
+  if (!confirmed) return;
+  try {
+    const { data, error } = await supabase.rpc("owner_delete_own_negative_point", {
+      requested_entry_id: entryId,
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    if (!data?.deleted) throw new Error(languageSetting.value === "en"
+      ? "The point could not be deleted."
+      : "Pointet kunne ikke slettes.");
+    showNotice(languageSetting.value === "en"
+      ? "The −1 point was deleted."
+      : "−1 pointet blev slettet.");
+    await loadDashboard();
+  } catch (error) {
+    displayError(error);
   }
 }
 
